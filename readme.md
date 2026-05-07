@@ -1,17 +1,22 @@
-project/
-├── server/
-│   ├── main.cpp          # 服务器入口，accept循环
-│   ├── client_handler.cpp # 每个客户端线程的处理逻辑
-│   ├── database.cpp       # 数据库读写、内存缓存
-│   ├── auth.cpp           # 用户认证
-│   └── logger.cpp         # 日志
-├── client/
-│   ├── main.cpp           # 客户端入口，交互式命令行
-│   └── protocol.cpp       # 协议封装（发送/接收）
-└── data/
-    ├── timetable.csv
-    └── users.csv
-
+DCN1003-Group21-2026/
+├── Common/
+│   ├── include/
+    │   ├── protocol.h        ← 通信协议（模块6）
+    │   │
+    │   └──
+│   └── src
+├── Client/
+│   └── main.cpp          ← 查询模块（模块2）+ 用户登录交互（模块3）
+├── Driver/
+│   ├── protocol.h        ← 通信协议（模块6）
+│   └── protocol.cpp
+├── Service/
+│   ├── main.cpp          ← 网络/并发（模块5）
+│   ├── course_store.h    ← 数据库模块（模块1）
+│   ├── course_store.cpp  ← 增删改查（模块4）
+│   └── auth.h/cpp        ← 用户认证（模块3 服务端部分）
+└── Data/
+    └── timetable.db
 
 ### 开发阶段拆解
 
