@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Add SQLite3 library from extern
 add_library(sqlite3 STATIC
     extern/sqlite3/sqlite3.c
@@ -24,3 +26,5 @@ add_subdirectory(Driver)
 add_subdirectory(Client)
 
 add_subdirectory(Service)
+
+add_subdirectory(Tests)

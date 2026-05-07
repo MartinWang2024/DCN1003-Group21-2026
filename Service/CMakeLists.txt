@@ -2,9 +2,9 @@ add_executable(dcn_service
 	src/service.cpp
 )
 
-target_link_libraries(dcn_service
+target_include_directories(dcn_service
 	PRIVATE
-		dcn_driver
+		${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 if (WIN32)

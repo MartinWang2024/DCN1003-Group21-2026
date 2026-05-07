@@ -1,19 +1,23 @@
-#include <winsock2.h>
+#include "service.h"
 #include <ws2tcpip.h>
 #include <iostream>
 #include <thread>
-#include <string>
 
-#include "protocol.h"
-#include "database.h"
+bool send_line(SOCKET sock, const std::string& text) {
+    std::string out = text + "\r\n";
+    const char* data = out.c_str();
+    int total_sent = 0;
+    int to_send = static_cast<int>(out.size());
 
-#pragma comment(lib, "ws2_32.lib")
-
-constexpr int PORT    = 8888;
-constexpr int BACKLOG = 10;
-constexpr int BUF_LEN = 4096;
-
-dcn_protocol::CourseStore g_store;
+    while (total_sent < to_send) {
+        int sent = send(sock, data + total_sent, to_send - total_sent, 0);
+        if (sent == SOCKET_ERROR || sent == 0) {
+            return false;
+        }
+        total_sent += sent;
+    }
+    return true;
+}
 
 // 每个客户端连接的处理线程
 void handle_client(SOCKET client_sock, sockaddr_in client_addr) {
@@ -45,10 +49,24 @@ void handle_client(SOCKET client_sock, sockaddr_in client_addr) {
             }
 
             std::cout << "[" << ip << ":" << port << "] " << line << std::endl;
-            auto replies = g_store.process_command(line);
-            for (const auto& r : replies) {
-                std::string out = r + "\r\n";
-                send(client_sock, out.c_str(), static_cast<int>(out.size()), 0);
+            if (line == "quit" || line == "exit") {
+                if (!send_line(client_sock, "BYE")) {
+                    break;
+                }
+                std::cout << "[*] Client requested close: " << ip << ":" << port << std::endl;
+                closesocket(client_sock);
+                return;
+            }
+
+            if (line == "ping" || line == "PING") {
+                if (!send_line(client_sock, "PONG")) {
+                    break;
+                }
+                continue;
+            }
+
+            if (!send_line(client_sock, "ECHO: " + line)) {
+                break;
             }
         }
     }

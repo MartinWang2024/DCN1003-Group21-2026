@@ -69,17 +69,21 @@ int main() {
     // 主线程负责读取用户输入并发送
     std::string line;
     while (running && std::getline(std::cin, line)) {
-        if (line == "quit" || line == "exit") {
-            running = false;
+        std::string out = line + "\r\n";
+        if (send(sock, out.c_str(), static_cast<int>(out.size()), 0) == SOCKET_ERROR) {
+            std::cerr << "send() failed: " << WSAGetLastError() << std::endl;
             break;
         }
-        line += "\r\n";
-        send(sock, line.c_str(), static_cast<int>(line.size()), 0);
+
+        if (line == "quit") {
+            break;
+        }
     }
 
-    running = false;
-    closesocket(sock);   // 关闭 socket，触发 recv_thread 退出
+    shutdown(sock, SD_SEND); // 告知服务端不再发送，等待服务端关闭连接
     if (t.joinable()) t.join();
+    closesocket(sock);
+    running = false;
 
     WSACleanup();
     return 0;
