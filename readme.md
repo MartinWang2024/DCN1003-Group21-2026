@@ -1,22 +1,44 @@
+
 DCN1003-Group21-2026/
-├── Common/
-│   ├── include/
-    │   ├── protocol.h        ← 通信协议（模块6）
-    │   │
-    │   └──
-│   └── src
 ├── Client/
-│   └── main.cpp          ← 查询模块（模块2）+ 用户登录交互（模块3）
+│ ├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+│ ├── include/
+│ │ └── client.h
+│ └── src/
+│ └── client.cpp
 ├── Driver/
-│   ├── protocol.h        ← 通信协议（模块6）
-│   └── protocol.cpp
+│ ├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+│ ├── include/
+│ │ ├── database.h ← 数据访问接口
+│ │ └── protocol.h ← 通信协议
+│ └── src/
+│ ├── database.cpp
+│ ├── error.cpp
+│ └── protocol.cpp
 ├── Service/
-│   ├── main.cpp          ← 网络/并发（模块5）
-│   ├── course_store.h    ← 数据库模块（模块1）
-│   ├── course_store.cpp  ← 增删改查（模块4）
-│   └── auth.h/cpp        ← 用户认证（模块3 服务端部分）
-└── Data/
-    └── timetable.db
+│ ├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+│ ├── include/
+│ │ └── service.h ← 服务端接口（网络/并发相关）
+│ └── src/
+│ └── service.cpp
+├── Tests/ ← 测试
+│ ├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+│ ├── test_database.cpp
+│ └── test_database_file.cpp
+├── data/
+│ ├── courses.db
+│ └── admins.db
+├── extern/
+│ └── sqlite3/
+│ ├── shell.c
+│ ├── sqlite3.c
+│ ├── sqlite3.h
+│ └── sqlite3ext.h
+├── build/ ← CMake 构建输出目录
+├── cmake-build-debug/ ← CLion/Debug 构建目录
+├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+└── [readme.md](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
+
 
 ### 开发阶段拆解
 
@@ -27,14 +49,14 @@ DCN1003-Group21-2026/
 
 **阶段二：协议 & 数据库**
 
-* 定义协议格式（参考作业示例），写解析函数
-* 实现 CSV 读写 + 内存中的 `std::vector<Course>` 缓存
+* 定义协议格式，写解析函数
+* 实现 SQLite读写 + 内存中的 `std::vector<Course>` 缓存？
 * 用 `std::mutex` 保护共享数据
 
 **阶段三：功能模块**
 
 * `LOGIN` → 验证用户角色（student/admin）
-* `QUERY CODE xxx` / `QUERY INSTRUCTOR xxx` / `QUERY ALL`
+* 实现基础的增删改查
 * `ADD` / `UPDATE` / `DELETE`（需 admin 权限）
 
 **阶段四：日志 & 错误处理**
