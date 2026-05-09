@@ -18,6 +18,15 @@ target_link_libraries(test_database_file
         sqlite3
 )
 
+add_executable(test_protobuf
+    test_protobuf.cpp
+)
+
+target_link_libraries(test_protobuf
+    PRIVATE
+        protobuf
+)
+
 enable_testing()
 add_test(NAME test_database      COMMAND test_database
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
