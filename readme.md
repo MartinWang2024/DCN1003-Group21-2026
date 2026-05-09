@@ -1,4 +1,3 @@
-
 DCN1003-Group21-2026/
 ├── Client/
 │ ├── [CMakeLists.txt](vscode-file://vscode-app/d:/App/Microsoft%20VS%20Code/8b640eef5a/resources/app/out/vs/code/electron-browser/workbench/workbench.html)
@@ -68,3 +67,9 @@ DCN1003-Group21-2026/
 
 * 按时间段搜索：`QUERY TIME Mon-10:00`
 * 简单加密：XOR 或 Base64 混淆传输内容
+
+# How To Build
+
+please remember to init submodule:
+- protobuf
+- 
