@@ -1,3 +1,4 @@
+include_directories(include)
 add_executable(test_database
     test_database.cpp
 )
@@ -19,7 +20,7 @@ target_link_libraries(test_database_file
 )
 
 add_executable(test_protobuf
-    test_protobuf.cpp
+        test_protobuf.cpp
 )
 
 target_link_libraries(test_protobuf
