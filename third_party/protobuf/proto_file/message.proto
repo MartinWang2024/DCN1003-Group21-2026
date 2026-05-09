@@ -1,0 +1,16 @@
+// version
+syntax = "proto3";
+
+// business data (Payload)
+message Payload {
+    string username = 1;                  // 字符串
+    repeated string selected_courses = 2; // 变长数组
+    repeated int32 scores = 3;            // int32 数组
+}
+
+// Body
+message MsgBody {
+    uint32 req_id = 1;       // C++ 里的 uint32_t
+    uint32 timestamp = 2;
+    Payload payload = 3;
+}
