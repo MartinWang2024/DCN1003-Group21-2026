@@ -1,3 +1,6 @@
 [submodule "third_party/protobuf/library"]
 	path = third_party/protobuf/library
 	url = https://github.com/protocolbuffers/protobuf.git
+[submodule "third_party/openssl/libopenssl"]
+	path = third_party/openssl/libopenssl
+	url = https://github.com/Rinsutoringu/libopenssl
