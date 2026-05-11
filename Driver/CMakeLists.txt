@@ -14,4 +14,5 @@ target_link_libraries(dcn_driver
     PRIVATE
         sqlite3
         protobuf
+        openssl
 )

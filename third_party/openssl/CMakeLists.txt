@@ -8,6 +8,7 @@ target_include_directories(
         openssl
         PUBLIC
         libopenssl/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 
 )
 

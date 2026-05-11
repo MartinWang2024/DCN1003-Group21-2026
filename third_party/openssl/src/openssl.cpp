@@ -1,12 +1,3 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <iomanip>
-#include <winsock2.h> // 必须在 openssl 之前
-#include "../libopenssl/include/openssl/evp.h"
-#include "../libopenssl/include/openssl/sha.h"
-#include "../libopenssl/include/openssl/err.h"
-
 #include "openssl.h"
 
 std::string sha256(const std::string& str) {
