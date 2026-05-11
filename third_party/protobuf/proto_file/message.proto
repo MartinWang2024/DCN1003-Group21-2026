@@ -3,14 +3,15 @@ syntax = "proto3";
 
 // business data (Payload)
 message Payload {
-    string username = 1;                  // 字符串
-    repeated string selected_courses = 2; // 变长数组
-    repeated int32 scores = 3;            // int32 数组
+    repeated string json = 1; // 变长数组
 }
 
-// Body
+// Package body
 message MsgBody {
-    uint32 req_id = 1;       // C++ 里的 uint32_t
-    uint32 timestamp = 2;
-    Payload payload = 3;
+    uint32 cmd_type = 1;	// 命令码
+    uint32 req_id = 2;      // uint32_t 命令号
+    uint32 timestamp = 3;	// 时间戳
+    Payload payload = 4;	// 消息内容
 }
+
+
