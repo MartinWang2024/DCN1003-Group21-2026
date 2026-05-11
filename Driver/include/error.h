@@ -12,6 +12,9 @@ namespace Error
         ACCEPT_ERR = 4,
         SEND_ERR = 5,
         RECV_ERR = 6,
+        READ_ERR = 7,
+        MAC_CALC_ERR = 8,
+        IV_CALC_ERR = 9,
         UNKNOWN_ERR = 100
     };
 
