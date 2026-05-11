@@ -65,7 +65,7 @@ void compute_hmac(
 
 Error::ErrorInfo readAppKey(unsigned char* key, const char* key_path = "app.key");
 
-inline unsigned char* key = {nullptr};
+inline unsigned char key[32] = {0};
 
 
 }
