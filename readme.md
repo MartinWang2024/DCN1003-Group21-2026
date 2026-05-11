@@ -86,3 +86,78 @@ cd build
 cmake ..
 make
 ```
+
+## Generate 32-bit Key
+
+we need to generate a 32-bit key and put into `DCN1003-Group21-2026/key` folder.
+
+use this command to generate key
+
+```bash
+openssl rand -out app.key 32
+```
+
+
+
+
+
+## About package
+
+we use C struct for package head, Google protobuf for package body
+
+we only use AES to Encryption package body, header will Plaintext Transmission.
+
+**when package send:**
+
+- generate package header
+  - we choose information payload
+  - calculate information hash、length, get protocal version.
+    - put them into `MsgHeader` c struct
+
+```c++
+struct MsgHeader
+{
+    uint32_t version;		// 协议版本号
+    uint32_t body_len;		// 加密后有效字段长度
+    uint8_t iv[16];			// AES初始向量
+    uint8_t mac[32] = {0};	// 消息认证码
+};
+```
+
+
+
+- build up and serialization package body
+  - we use function `body.set_xxx()` to put sending part into `google::protobuf::Message&` type
+
+```protobuf
+message Payload {
+    repeated string json = 1; // 变长数组
+}
+
+message MsgBody {
+	uint32 cmd_type = 1;	// 命令码
+    uint32 req_id = 2;      // uint32_t 命令号
+    uint32 timestamp = 3;	// 时间戳
+    Payload payload = 4;	// 消息内容
+}
+```
+
+- Then, we must Encryption Msg.
+  - set a secrety key in server / client.
+  - use AES to Encryption MsgBody.
+  - calcuate MsgBody HMAC
+  - put HMAC into `MsgHeader.mac`
+
+
+
+
+
+- Use `Package_send` send encypt result.
+
+
+
+**Receive Package**
+
+- we receive package header as plaintext, we know it’s how long, so we can verfiyed it use `length()`
+  -  we got hash \ cmd_type \ protocol version
+- then we try to 
