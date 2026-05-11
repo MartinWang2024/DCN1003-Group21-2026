@@ -32,6 +32,10 @@ add_custom_command(TARGET test_openssl POST_BUILD
         ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libcrypto-3-x64.dll
         ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libssl-3-x64.dll
         $<TARGET_FILE_DIR:test_openssl>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/key/app.key
+        $<TARGET_FILE_DIR:test_openssl>
     COMMENT "Copying OpenSSL DLLs for test_openssl"
 )
 

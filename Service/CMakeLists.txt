@@ -11,3 +11,7 @@ if (WIN32)
 	target_link_libraries(dcn_service PRIVATE ws2_32)
 endif ()
 
+target_link_libraries(dcn_service
+	PRIVATE
+		openssl
+)
