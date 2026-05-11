@@ -97,7 +97,9 @@ use this command to generate key
 openssl rand -out app.key 32
 ```
 
+## How to update version
 
+edit file `config.h.in`.
 
 
 
@@ -108,23 +110,6 @@ we use C struct for package head, Google protobuf for package body
 we only use AES to Encryption package body, header will Plaintext Transmission.
 
 **when package send:**
-
-- generate package header
-  - we choose information payload
-  - calculate information hash、length, get protocal version.
-    - put them into `MsgHeader` c struct
-
-```c++
-struct MsgHeader
-{
-    uint32_t version;		// 协议版本号
-    uint32_t body_len;		// 加密后有效字段长度
-    uint8_t iv[16];			// AES初始向量
-    uint8_t mac[32] = {0};	// 消息认证码
-};
-```
-
-
 
 - build up and serialization package body
   - we use function `body.set_xxx()` to put sending part into `google::protobuf::Message&` type
@@ -144,15 +129,33 @@ message MsgBody {
 
 - Then, we must Encryption Msg.
   - set a secrety key in server / client.
-  - use AES to Encryption MsgBody.
-  - calcuate MsgBody HMAC
-  - put HMAC into `MsgHeader.mac`
+    - use command `openssl rand -out my_secret.key 32`(See step《Generate 32-bit Key》)
+  - generate **VI**
+  - USE secret_key and VI to calculate MsgBody **HMAC**
+  - use **AES** to Encryption MsgBody.
+  - AES result will be send by socket_send function.
 
 
 
+- generate package header
+  - we need:
+    - **HMAC** result
+    - **VI** result
+    - calculate **AES** result length 
+    - get protocal version
+  - put them into `MsgHeader` c struct
 
+```c++
+struct MsgHeader
+{
+    uint32_t version;		// 协议版本号
+    uint32_t body_len;		// 加密后有效字段长度
+    uint8_t iv[16];			// AES初始向量
+    uint8_t mac[32] = {0};	// 消息认证码
+};
+```
 
-- Use `Package_send` send encypt result.
+- Send in sequence **header** and **body**.
 
 
 
