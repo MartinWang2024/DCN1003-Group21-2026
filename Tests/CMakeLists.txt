@@ -43,8 +43,17 @@ target_link_libraries(test_protobuf
         protobuf
 )
 
+add_executable(test_log
+        test_log.cpp
+)
+target_link_libraries(test_log
+    PRIVATE
+        dcn_driver
+)
+
 enable_testing()
 add_test(NAME test_database      COMMAND test_database
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME test_database_file COMMAND test_database_file
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
