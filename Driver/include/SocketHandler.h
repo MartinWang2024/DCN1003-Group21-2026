@@ -5,7 +5,7 @@
 
 namespace TcpSocket
 {
-    class Socket
+    class SocketHandler
     {
         private:
             SOCKET socket;
@@ -14,8 +14,8 @@ namespace TcpSocket
 
         public:
             // 通过 accept 函数实例化 Socket 对象
-            Socket(SOCKET client_sock, sockaddr_in client_addr);
-            ~Socket();
+            SocketHandler(SOCKET client_sock, sockaddr_in client_addr);
+            ~SocketHandler();
 
             /**
              * 发送数据包
@@ -24,7 +24,7 @@ namespace TcpSocket
              * @param data_len 数据长度
              * @return err结构体
              */
-            Error::ErrorInfo package_send(SOCKET socket, const void* send_data, size_t data_len);
+            Error::ErrorInfo socket_send(const void* send_data, size_t data_len);
 
             /**
              * 接收数据包
@@ -33,6 +33,6 @@ namespace TcpSocket
              * @param data_len 需要接收的长度
              * @return err结构体
              */
-            Error::ErrorInfo package_recv(SOCKET socket, void* recv_data, size_t data_len);
+            Error::ErrorInfo socket_recv(void* recv_data, size_t data_len);
     };
 }
