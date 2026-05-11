@@ -59,6 +59,12 @@ TEST(test_protobuf_unpack)
     }
 }
 
+TEST(test_build_up_msg)
+{
+    MsgBody body;
+    body.set_req_id()
+}
+
 // ─────────────────────────────────────────────
 // main
 // ─────────────────────────────────────────────

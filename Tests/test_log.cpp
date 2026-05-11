@@ -8,10 +8,14 @@
 // ─────────────────────────────────────────────
 // CourseRepository 测试
 // ─────────────────────────────────────────────
-TEST(test_nowtime)
+TEST(test_time)
 {
     auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::cout << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S") << std::endl;
+}
+TEST(test_now_time)
+{
+    std::cout << get_now_time() << std::endl;
 }
 TEST(test_log)
 {
@@ -26,7 +30,8 @@ TEST(test_log)
 // ─────────────────────────────────────────────
 int main() {
     std::cout << "=== timetest ===\n";
-    RUN(test_nowtime);
+    RUN(test_time);
+    RUN(test_now_time);
     RUN(test_log);
 
 
