@@ -72,4 +72,17 @@ DCN1003-Group21-2026/
 
 please remember to init submodule:
 - protobuf
-- 
+- libopenssl
+
+```bash
+git submodule update --init --recursive
+```
+
+Then you can build the project using CMake:
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
