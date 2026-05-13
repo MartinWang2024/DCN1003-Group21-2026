@@ -13,9 +13,25 @@ namespace TcpSocket
             int port = -1;
 
         public:
+
+            // 不准拷贝
+            SocketHandler(const SocketHandler &) = delete;
+            SocketHandler& operator=(const SocketHandler&) = delete;
+
+            // 允许资源所有权转移
+            SocketHandler(SocketHandler&& other) noexcept : socket(other.socket) {
+                other.socket = INVALID_SOCKET;   // ★ 关键：原对象不再持有
+            }
+            SocketHandler& operator=(SocketHandler&&) noexcept;
+
+
+            ~SocketHandler() {
+                if (socket != INVALID_SOCKET)    // ★ 防止 closesocket(0) 之类
+                    closesocket(socket);
+            }
+
             // 通过 accept 函数实例化 Socket 对象
             SocketHandler(SOCKET client_sock, sockaddr_in client_addr);
-            ~SocketHandler();
 
             /**
              * 发送数据包

@@ -10,10 +10,6 @@ SocketHandler::SocketHandler(SOCKET client_sock, sockaddr_in client_addr)
     port = ntohs(client_addr.sin_port);
 }
 
-SocketHandler::~SocketHandler()
-{
-    closesocket(socket);
-}
 
 Error::ErrorInfo SocketHandler::socket_send(const void* send_data, size_t data_len)
 {
