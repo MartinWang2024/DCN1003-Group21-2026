@@ -18,9 +18,6 @@
 static constexpr uint32_t MAX_BODY = 16 * 1024 * 1024;
 
 namespace Protocal {
-    namespace detail {
-        inline std::atomic<uint32_t> g_req_id_counter{1};
-    }
 
     // 包头
     struct MsgHeader
@@ -40,7 +37,7 @@ namespace Protocal {
     // typedef payload_t register_request_t;
 
 
-    Error::ErrorInfo Package_send(TcpSocket::SocketHandler &sh, const unsigned char* msg, size_t msg_len, uint32_t cmd_type);
-    Error::ErrorInfo Package_receive(TcpSocket::SocketHandler &sh, google::protobuf::Message& msg);
+    Error::ErrorInfo Package_send(TcpSocket::SocketHandler sh, const unsigned char* msg, size_t msg_len, uint32_t cmd_type);
+    Error::ErrorInfo Package_receive(TcpSocket::SocketHandler sh, google::protobuf::Message& msg);
 }
 
