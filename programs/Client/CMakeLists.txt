@@ -1,10 +1,10 @@
 add_executable(dcn_client
-    src/client.cpp
+        src/client_main.cpp
 )
 
 target_include_directories(dcn_client
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        include
 )
 
 target_link_libraries(dcn_client

@@ -12,9 +12,9 @@ add_subdirectory(third_party)
 
 add_subdirectory(Driver)
 
-add_subdirectory(Client)
+add_subdirectory(programs/Client)
 
-add_subdirectory(Service)
+add_subdirectory(programs/Server)
 
 add_subdirectory(Tests)
 
@@ -25,7 +25,7 @@ configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Service/config.h")
 
 # --- 客户端配置 ---
 set(APP_VERSION "000001")
-set(APP_TYPE "CLIENT")
+set(APP_TYPE "programs/Client")
 configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Client/config.h")
 
 # --- 客户端配置 ---
@@ -36,7 +36,7 @@ configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Driver/include/config.h"
 # --- 定义目标并关联对应的头文件 ---
 
 # 服务端目标
-target_include_directories(dcn_service PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Service")
+target_include_directories(dcn_server PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Server")
 
 # 客户端目标
 target_include_directories(dcn_client PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Client")
