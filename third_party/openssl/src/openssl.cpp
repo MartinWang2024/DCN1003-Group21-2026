@@ -30,20 +30,26 @@ std::vector<unsigned char> aes_encrypt(const std::string& plain_text, const unsi
     std::vector<unsigned char> ciphertext(plain_text.size() + 16);
     int len;
     int ciphertext_len;
+    bool ok = true;
 
     // 初始化加密上下文
-    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, key, iv);
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, key, iv) != 1) ok = false;
 
     // 加密
-    EVP_EncryptUpdate(ctx, ciphertext.data(), &len, (unsigned char*)plain_text.c_str(), plain_text.size());
-    ciphertext_len = len;
+    if (EVP_EncryptUpdate(
+        ctx,
+        ciphertext.data(), &len,
+        (unsigned char*)plain_text.c_str(),
+        plain_text.size()) != 1) ok = false;
 
+    ciphertext_len = len;
     // 结束处理（处理填充 padding）
-    EVP_EncryptFinal_ex(ctx, ciphertext.data() + len, &len);
+    if (EVP_EncryptFinal_ex(ctx, ciphertext.data() + len, &len) != 1) ok = false;
     ciphertext_len += len;
 
     ciphertext.resize(ciphertext_len); // 缩减到实际长度
     EVP_CIPHER_CTX_free(ctx);
+    if (ok == false) return {};
 
     return ciphertext;
 }
@@ -51,11 +57,32 @@ std::vector<unsigned char> aes_encrypt(const std::string& plain_text, const unsi
 std::vector<unsigned char> aes_decrypt(const std::string& cipher_text, const unsigned char* key, const unsigned char* iv)
 {
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-    std::vector<unsigned char> plaintext(cipher_text.size() + 16);
-    int len;
-    int plaintext_len;
-    // TODO
+    if (!ctx) return{};
 
+    std::vector<unsigned char> plaintext(cipher_text.size());
+    int len = 0;
+    int plaintext_len = 0;
+    bool ok = true;
+    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, key, iv) != 1) ok = false;
+    if (EVP_DecryptUpdate(
+        ctx,
+        plaintext.data(), &len,
+        reinterpret_cast<const unsigned char*>(cipher_text.data()),
+        static_cast<int>(cipher_text.size())) != 1) ok = false;
+
+    plaintext_len = len;
+    // key/iv 错 或 密文被篡改
+    if (ok && EVP_DecryptFinal_ex(ctx, plaintext.data() + plaintext_len, &len) != 1) {
+        ok = false;
+    }
+    plaintext_len += len;
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    if (!ok) return {};
+
+    plaintext.resize(plaintext_len);
+    return plaintext;
 }
 
 bool iv_gen(unsigned char* iv, size_t length)

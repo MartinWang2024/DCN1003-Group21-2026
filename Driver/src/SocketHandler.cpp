@@ -10,6 +10,11 @@ SocketHandler::SocketHandler(SOCKET client_sock, sockaddr_in client_addr)
     port = ntohs(client_addr.sin_port);
 }
 
+SocketHandler::~SocketHandler()
+{
+    closesocket(socket);
+}
+
 Error::ErrorInfo SocketHandler::socket_send(const void* send_data, size_t data_len)
 {
     Error::ErrorInfo err;
@@ -45,7 +50,7 @@ Error::ErrorInfo SocketHandler::socket_recv(void* recv_data, const size_t data_l
     {
         int recv_byte = recv(
             this->socket,
-            data_ptr,
+            data_ptr + total_recv,
             static_cast<int>(data_len - total_recv),
             0
             );

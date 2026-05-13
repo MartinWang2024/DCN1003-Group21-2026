@@ -6,8 +6,16 @@
 #include "openssl.h"
 #include "error.h"
 #include "SocketHandler.h"
+#include "cmd_type.h"
+
+// TODO 接收解码
+// TODO 测试发包收包代码正常工作
+// TODO 划定指令数量及内容
+// TODO 登录逻辑
+// TODO 课程查询逻辑
 
 
+static constexpr uint32_t MAX_BODY = 16 * 1024 * 1024;
 
 namespace Protocal {
 
@@ -29,7 +37,7 @@ namespace Protocal {
     // typedef payload_t register_request_t;
 
 
-    Error::ErrorInfo Package_send(TcpSocket::SocketHandler sh, const unsigned char* msg, uint32_t cmd_type);
+    Error::ErrorInfo Package_send(TcpSocket::SocketHandler sh, const unsigned char* msg, size_t msg_len, uint32_t cmd_type);
     Error::ErrorInfo Package_receive(TcpSocket::SocketHandler sh, google::protobuf::Message& msg);
 }
 
