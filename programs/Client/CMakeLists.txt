@@ -1,5 +1,5 @@
 add_executable(dcn_client
-        src/client.cpp
+        src/client_main.cpp
 )
 
 target_include_directories(dcn_client

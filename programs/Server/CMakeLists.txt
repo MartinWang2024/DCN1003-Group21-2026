@@ -1,5 +1,5 @@
 add_executable(dcn_server
-		src/service.cpp
+		src/server_main.cpp
 )
 
 target_include_directories(dcn_server
