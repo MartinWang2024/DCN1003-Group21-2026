@@ -22,7 +22,7 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_ch
         }
     }
 
-    MsgHeader header;
+    MsgHeader_t header;
     header.version = std::stoi(APP_VERSION);
 
     // 填充body
@@ -113,10 +113,10 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_ch
 Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google::protobuf::Message& msg)
 {
     Error::ErrorInfo err;
-    MsgHeader recv_header;
+    MsgHeader_t recv_header;
 
     // 接收包头
-    if (sh.socket_recv(&recv_header, sizeof(MsgHeader)).e != Error::SUCCESS)
+    if (sh.socket_recv(&recv_header, sizeof(MsgHeader_t)).e != Error::SUCCESS)
     {
         err.e = Error::RECV_ERR;
         err.message = "Package header receive failed.";

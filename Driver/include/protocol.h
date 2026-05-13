@@ -23,11 +23,11 @@ namespace Protocal {
     }
 
     // 包头
-    struct MsgHeader
+    struct MsgHeader_t
     {
-        uint32_t version;		// 协议版本号
-        uint32_t body_len;		// 加密后有效字段长度
-        uint8_t iv[16];			// AES初始向量
+        uint32_t version{};		// 协议版本号
+        uint32_t body_len{};		// 加密后有效字段长度
+        uint8_t iv[16]{};			// AES初始向量
         uint8_t mac[32] = {0};	// 消息认证码
     };
     // struct MsgBody
