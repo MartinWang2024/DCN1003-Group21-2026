@@ -1,8 +1,9 @@
 add_library(dcn_driver STATIC
     src/protocol.cpp
     src/database.cpp
-        src/SocketHandler.cpp
+    src/SocketHandler.cpp
     src/log.cpp
+    src/CmdHandler.cpp
 )
 
 target_include_directories(dcn_driver
