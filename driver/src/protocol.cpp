@@ -13,7 +13,7 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_ch
 
     // 检查有没有把 key load 进内存
     if (memcmp(openssl::key, zero_buffer, sizeof(openssl::key)) == 0) {
-        if (openssl::readAppKey(openssl::key, "app,key").e != 0)
+        if (openssl::readAppKey(openssl::key, "app.key").e != 0)
         {
             err.e = Error::READ_ERR;
             err.message = "retry load key to memory failed.";
@@ -146,6 +146,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
         err.e = Error::RECV_ERR;
         err.message = "Package body receive failed.";
         print_log(err, debug);
+        return err;
     }
     // 包体解码
     std::vector<u_char> plaintext = openssl::aes_decrypt(
