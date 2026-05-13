@@ -1,5 +1,6 @@
 add_executable(dcn_server
 		src/server_main.cpp
+		src/cmdreg.cpp
 )
 
 target_include_directories(dcn_server
@@ -13,6 +14,7 @@ endif ()
 
 target_link_libraries(dcn_server
 	PRIVATE
+		protobuf
 		openssl
 		dcn_driver
 )

@@ -22,7 +22,7 @@ namespace Protocal::Dispatch
     // 会话信息
     struct Session_t
     {
-        role_t role = STUDENT;
+        role_t role = STUDENT;  // 默认权限等级
         std::string name;
     };
 

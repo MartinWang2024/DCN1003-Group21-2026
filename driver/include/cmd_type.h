@@ -9,6 +9,7 @@ namespace Protocal
         // 认证类
         CMD_LOGIN_REQ               = C2S | 0x0001,   // 协议请求: 登录
         CMD_LOGIN_RESP              = S2C | 0x0002,   // 协议响应: 登录
+        CMD_LOGOUT_REQ              = C2S | 0x0003,   // 协议请求: 登出
         // 查询类
         CMD_QUERY_BY_CODE_REQ       = C2S | 0x0101,   // 协议请求: 课程编码查询
         CMD_QUERY_BY_INSTRUCTOR_REQ = C2S | 0x0102,   // 协议请求: 导师姓名查询
