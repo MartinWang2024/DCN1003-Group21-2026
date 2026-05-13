@@ -36,11 +36,13 @@ namespace Protocal::Dispatch
     };
 
     // 响应数据结构
+    #pragma pack(push, 1)
     struct Response_t
     {
-        uint32_t cmd_type;
+        cmdtype_t cmd_type;
         std::string payload;
     };
+    #pragma pack(pop)
 
     // 函数模板
     using HandlerFn = std::function<Response_t(const ReqContext_t&)>;

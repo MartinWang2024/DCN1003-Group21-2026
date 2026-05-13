@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "protocol.h"
 
 
 using namespace Protocal::Dispatch;
@@ -70,11 +71,16 @@ Error::ErrorInfo Dispatcher::send_response_s(TcpSocket::SocketHandler& sh, const
         print_log(info, "Dispatcher::payload is empty");
         return err;
     }
-    if (sh.socket_send(resp.payload.data(), resp.payload.size()).e != Error::SUCCESS)
+    if (Package_send(
+        sh,
+        reinterpret_cast<const u_char*>(resp.payload.data()),
+        resp.payload.length(),
+        resp.cmd_type).e != Error::SUCCESS)
     {
         err.e = Error::SEND_ERR;
         err.message = "Failed to send response";
         print_log(info, "Dispatcher::send_response failed");
+        return err;
     }
     return err;
 }
@@ -99,11 +105,16 @@ Error::ErrorInfo Dispatcher::send_response_c(TcpSocket::SocketHandler& sh, const
         print_log(info, "Dispatcher::payload is empty");
         return err;
     }
-    if (sh.socket_send(resp.payload.data(), resp.payload.size()).e != Error::SUCCESS)
+    if (Package_send(
+        sh,
+        reinterpret_cast<const u_char*>(resp.payload.data()),
+        resp.payload.length(),
+        resp.cmd_type).e != Error::SUCCESS)
     {
         err.e = Error::SEND_ERR;
         err.message = "Failed to send response";
         print_log(info, "Dispatcher::send_response failed");
+        return err;
     }
     return err;
 }
