@@ -62,7 +62,6 @@ class Payload final :
  public:
   inline Payload() : Payload(nullptr) {}
   ~Payload() override;
-  int set_json(int _cpp_par_);
   explicit PROTOBUF_CONSTEXPR Payload(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
   Payload(const Payload& from);
@@ -179,7 +178,7 @@ class Payload final :
   enum : int {
     kJsonFieldNumber = 1,
   };
-  // repeated string json = 1;
+  // repeated bytes json = 1;
   int json_size() const;
   private:
   int _internal_json_size() const;
@@ -190,12 +189,12 @@ class Payload final :
   void set_json(int index, const std::string& value);
   void set_json(int index, std::string&& value);
   void set_json(int index, const char* value);
-  void set_json(int index, const char* value, size_t size);
+  void set_json(int index, const void* value, size_t size);
   std::string* add_json();
   void add_json(const std::string& value);
   void add_json(std::string&& value);
   void add_json(const char* value);
-  void add_json(const char* value, size_t size);
+  void add_json(const void* value, size_t size);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& json() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_json();
   private:
@@ -410,7 +409,7 @@ class MsgBody final :
 #endif  // __GNUC__
 // Payload
 
-// repeated string json = 1;
+// repeated bytes json = 1;
 inline int Payload::_internal_json_size() const {
   return json_.size();
 }
@@ -449,7 +448,7 @@ inline void Payload::set_json(int index, const char* value) {
   json_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:Payload.json)
 }
-inline void Payload::set_json(int index, const char* value, size_t size) {
+inline void Payload::set_json(int index, const void* value, size_t size) {
   json_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:Payload.json)
@@ -470,7 +469,7 @@ inline void Payload::add_json(const char* value) {
   json_.Add()->assign(value);
   // @@protoc_insertion_point(field_add_char:Payload.json)
 }
-inline void Payload::add_json(const char* value, size_t size) {
+inline void Payload::add_json(const void* value, size_t size) {
   json_.Add()->assign(reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_add_pointer:Payload.json)
 }

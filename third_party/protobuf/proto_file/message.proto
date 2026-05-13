@@ -3,7 +3,7 @@ syntax = "proto3";
 
 // business data (Payload)
 message Payload {
-    repeated string json = 1; // 变长数组
+    repeated bytes json = 1; // 变长数组
 }
 
 // Package body

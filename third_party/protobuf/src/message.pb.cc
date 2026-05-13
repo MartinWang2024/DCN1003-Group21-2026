@@ -81,7 +81,7 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_message_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\rmessage.proto\"\027\n\007Payload\022\014\n\004json\030\001 \003(\t"
+  "\n\rmessage.proto\"\027\n\007Payload\022\014\n\004json\030\001 \003(\014"
   "\"Y\n\007MsgBody\022\020\n\010cmd_type\030\001 \001(\r\022\016\n\006req_id\030"
   "\002 \001(\r\022\021\n\ttimestamp\030\003 \001(\r\022\031\n\007payload\030\004 \001("
   "\0132\010.Payloadb\006proto3"
@@ -158,7 +158,7 @@ const char* Payload::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // repeated string json = 1;
+      // repeated bytes json = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr -= 1;
@@ -167,7 +167,6 @@ const char* Payload::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
             auto str = _internal_add_json();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "Payload.json"));
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
         } else
@@ -202,14 +201,10 @@ uint8_t* Payload::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated string json = 1;
+  // repeated bytes json = 1;
   for (int i = 0, n = this->_internal_json_size(); i < n; i++) {
     const auto& s = this->_internal_json(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Payload.json");
-    target = stream->WriteString(1, s, target);
+    target = stream->WriteBytes(1, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -228,11 +223,11 @@ size_t Payload::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated string json = 1;
+  // repeated bytes json = 1;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(json_.size());
   for (int i = 0, n = json_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
       json_.Get(i));
   }
 
