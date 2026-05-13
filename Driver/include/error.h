@@ -3,7 +3,7 @@
 
 namespace Error
 {
-    enum ErrorCode
+    enum errorcode_t
     {
         SUCCESS = 0,
         SOCKET_ERR = 1,
@@ -20,12 +20,14 @@ namespace Error
         DECRYPT_ERR = 12,
         PROTO_CODING_ERR = 13,
         PROTO_PARSE_ERR = 14,
+        DISPATCH_ERR = 15,
+        CMD_ERR = 16,
         UNKNOWN_ERR = 65535,
     };
 
     struct ErrorInfo
     {
-        ErrorCode e = SUCCESS;      // 错误码
+        errorcode_t e = SUCCESS;      // 错误码
         std::string message = {0};  // 错误原因
     };
 
