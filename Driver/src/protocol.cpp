@@ -3,11 +3,9 @@
 #include "log.h"
 #include <atomic>
 
-namespace {
-    std::atomic<uint32_t> g_req_id_counter{1};
-}
 
-Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler sh, const u_char* msg, size_t msg_len, uint32_t cmd_type)
+
+Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_char* msg, size_t msg_len, uint32_t cmd_type)
 {
     Error::ErrorInfo err;
 
@@ -32,7 +30,7 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler sh, const u_cha
     body.set_cmd_type(cmd_type);
     body.set_timestamp(get_now_time());
     // 单调自增的请求号，避免硬编码字面量并保证包间唯一
-    body.set_req_id(g_req_id_counter.fetch_add(1, std::memory_order_relaxed));
+    body.set_req_id(detail::g_req_id_counter.fetch_add(1, std::memory_order_relaxed));
 
     // 填充payload（按真实长度构造，避免 msg 中含 \0 时被截断）
     Payload* payload_ptr = body.mutable_payload();
@@ -112,7 +110,7 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler sh, const u_cha
     return err;
 }
 
-Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler sh, google::protobuf::Message& msg)
+Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google::protobuf::Message& msg)
 {
     Error::ErrorInfo err;
     MsgHeader recv_header;
