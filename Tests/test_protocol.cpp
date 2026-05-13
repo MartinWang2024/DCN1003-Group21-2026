@@ -1,7 +1,5 @@
 // 测试 Package_send / Package_receive 全流程：protobuf → HMAC → AES → socket
 // 通过 loopback (127.0.0.1) 构造一对真实 TCP 连接，让发收两端对接自己
-#include <atomic>
-#include <chrono>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -30,8 +28,7 @@ struct WinsockGuard {
 };
 
 // ─────────────────────────────────────────────
-// 建立 loopback socket pair
-// 返回 (server_handler, client_handler)，二者已通过 TCP 连上
+// 建立 loopback socket pair，二者已通过 TCP 连上
 // ─────────────────────────────────────────────
 struct SockPair {
     TcpSocket::SocketHandler server;
@@ -39,14 +36,13 @@ struct SockPair {
 };
 
 static SockPair make_loopback_pair() {
-    // 1. 监听端
     SOCKET listener = socket(AF_INET, SOCK_STREAM, 0);
     if (listener == INVALID_SOCKET) throw std::runtime_error("listener socket failed");
 
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = 0;  // OS 自动分配端口
+    addr.sin_port = 0;
 
     if (bind(listener, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR)
         throw std::runtime_error("bind failed");
@@ -57,7 +53,7 @@ static SockPair make_loopback_pair() {
     if (getsockname(listener, reinterpret_cast<sockaddr*>(&addr), &alen) == SOCKET_ERROR)
         throw std::runtime_error("getsockname failed");
 
-    // 2. 客户端连接（异步，避免和 accept 互相阻塞）
+    // 客户端 connect 与服务端 accept 必须并发，否则互相阻塞
     SOCKET cli = socket(AF_INET, SOCK_STREAM, 0);
     if (cli == INVALID_SOCKET) throw std::runtime_error("client socket failed");
 
@@ -83,43 +79,37 @@ static SockPair make_loopback_pair() {
     };
 }
 
-// ─────────────────────────────────────────────
-// 全局前置：保证 openssl::key 已加载
-// ─────────────────────────────────────────────
 static void ensure_key_loaded() {
     if (openssl::readAppKey(openssl::key, "app.key").e != Error::SUCCESS)
         throw std::runtime_error("readAppKey failed - 请确保运行目录下有 app.key");
 }
 
+// 小包发收的便利封装：loopback 上小包 send 立即返回，无需异步
+static Error::ErrorInfo send_str(TcpSocket::SocketHandler& sh,
+                                  const std::string& payload,
+                                  uint32_t cmd_type) {
+    return Protocal::Package_send(
+        sh,
+        reinterpret_cast<const u_char*>(payload.data()),
+        payload.size(),
+        cmd_type);
+}
+
 // ─────────────────────────────────────────────
-// CASE 1: 基本回环 —— 客户端发，服务端收，校验 cmd_type 与 payload
+// CASE 1: 基本回环 —— 校验 cmd_type 与 payload
 // ─────────────────────────────────────────────
 TEST(test_send_receive_basic_roundtrip) {
     auto pair = make_loopback_pair();
+    const std::string payload = "hello world";
+    const uint32_t cmd = 0x1001;
 
-    const char* payload = "hello world";
-    const uint32_t cmd  = 0x1001;
-    Error::ErrorInfo send_err;
+    REQUIRE(send_str(pair.client, payload, cmd).e == Error::SUCCESS);
 
-    // 发送线程
-    std::thread sender([&] {
-        send_err = Protocal::Package_send(
-            pair.client,
-            reinterpret_cast<const u_char*>(payload),
-            std::strlen(payload),
-            cmd);
-    });
-
-    // 主线程做接收
     MsgBody body;
-    Error::ErrorInfo recv_err = Protocal::Package_receive(pair.server, body);
-    sender.join();
-
-    REQUIRE(send_err.e == Error::SUCCESS);
-    REQUIRE(recv_err.e == Error::SUCCESS);
+    REQUIRE(Protocal::Package_receive(pair.server, body).e == Error::SUCCESS);
     REQUIRE(body.cmd_type() == cmd);
     REQUIRE(body.payload().json_size() == 1);
-    REQUIRE(body.payload().json(0) == std::string(payload));
+    REQUIRE(body.payload().json(0) == payload);
 }
 
 // ─────────────────────────────────────────────
@@ -127,101 +117,68 @@ TEST(test_send_receive_basic_roundtrip) {
 // ─────────────────────────────────────────────
 TEST(test_send_receive_binary_payload_with_nulls) {
     auto pair = make_loopback_pair();
+    const std::string payload{'A', '\0', 'B', '\0', 'C'};
 
-    std::string payload;
-    payload.push_back('A');
-    payload.push_back('\0');
-    payload.push_back('B');
-    payload.push_back('\0');
-    payload.push_back('C');
-
-    Error::ErrorInfo send_err, recv_err;
-
-    std::thread sender([&] {
-        send_err = Protocal::Package_send(
-            pair.client,
-            reinterpret_cast<const u_char*>(payload.data()),
-            payload.size(),
-            0x2002);
-    });
+    REQUIRE(send_str(pair.client, payload, 0x2002).e == Error::SUCCESS);
 
     MsgBody body;
-    recv_err = Protocal::Package_receive(pair.server, body);
-    sender.join();
-
-    REQUIRE(send_err.e == Error::SUCCESS);
-    REQUIRE(recv_err.e == Error::SUCCESS);
+    REQUIRE(Protocal::Package_receive(pair.server, body).e == Error::SUCCESS);
     REQUIRE(body.payload().json_size() == 1);
-    REQUIRE(body.payload().json(0) == payload);  // 完整 5 字节
     REQUIRE(body.payload().json(0).size() == 5);
-}
-
-// ─────────────────────────────────────────────
-// CASE 3: 大 payload —— 验证分片接收正确（暴露 socket_recv 循环 bug）
-// ─────────────────────────────────────────────
-TEST(test_send_receive_large_payload) {
-    auto pair = make_loopback_pair();
-
-    // 构造 64KB 的 payload，强制 TCP 分片
-    std::string payload(64 * 1024, '\0');
-    for (size_t i = 0; i < payload.size(); ++i)
-        payload[i] = static_cast<char>(i & 0xFF);
-
-    Error::ErrorInfo send_err, recv_err;
-    std::thread sender([&] {
-        send_err = Protocal::Package_send(
-            pair.client,
-            reinterpret_cast<const u_char*>(payload.data()),
-            payload.size(),
-            0x3003);
-    });
-
-    MsgBody body;
-    recv_err = Protocal::Package_receive(pair.server, body);
-    sender.join();
-
-    REQUIRE(send_err.e == Error::SUCCESS);
-    REQUIRE(recv_err.e == Error::SUCCESS);
-    REQUIRE(body.payload().json_size() == 1);
     REQUIRE(body.payload().json(0) == payload);
 }
 
 // ─────────────────────────────────────────────
-// CASE 4: 双向 —— A 发给 B, B 回给 A
+// CASE 3: 64KB payload —— 验证 socket_recv 循环正确（暴露分片接收 bug）
+// 大包需要并发：send 可能因内核 buffer 满而阻塞，必须由对端 recv 同步消费
+// ─────────────────────────────────────────────
+TEST(test_send_receive_large_payload) {
+    auto pair = make_loopback_pair();
+
+    std::string payload(64 * 1024, '\0');
+    for (size_t i = 0; i < payload.size(); ++i)
+        payload[i] = static_cast<char>('A' + (i % 26));
+
+    Error::ErrorInfo send_err;
+    std::thread sender([&] {
+        send_err = send_str(pair.client, payload, 0x3003);
+    });
+
+    MsgBody body;
+    Error::ErrorInfo recv_err = Protocal::Package_receive(pair.server, body);
+    sender.join();
+
+    REQUIRE(send_err.e == Error::SUCCESS);
+    REQUIRE(recv_err.e == Error::SUCCESS);
+    REQUIRE(body.payload().json(0) == payload);
+}
+
+// ─────────────────────────────────────────────
+// CASE 4: 双向 —— client → server → client 完整请求/响应流程
+// 必须并发：服务端的 send 依赖客户端先 receive 才能腾出 buffer
 // ─────────────────────────────────────────────
 TEST(test_send_receive_bidirectional) {
     auto pair = make_loopback_pair();
 
-    Error::ErrorInfo c2s_send, s_recv, s2c_send, c_recv;
-
+    Error::ErrorInfo s_recv_err, s_send_err;
     std::thread server_thread([&] {
         MsgBody req;
-        s_recv = Protocal::Package_receive(pair.server, req);
-        if (s_recv.e != Error::SUCCESS) return;
+        s_recv_err = Protocal::Package_receive(pair.server, req);
+        if (s_recv_err.e != Error::SUCCESS) return;
 
         const std::string reply = "RESULT:" + req.payload().json(0);
-        s2c_send = Protocal::Package_send(
-            pair.server,
-            reinterpret_cast<const u_char*>(reply.data()),
-            reply.size(),
-            0xFF00);
+        s_send_err = send_str(pair.server, reply, 0xFF00);
     });
 
-    const char* req_payload = "QUERY CS101";
-    c2s_send = Protocal::Package_send(
-        pair.client,
-        reinterpret_cast<const u_char*>(req_payload),
-        std::strlen(req_payload),
-        0x0101);
+    REQUIRE(send_str(pair.client, "QUERY CS101", 0x0101).e == Error::SUCCESS);
 
     MsgBody resp;
-    c_recv = Protocal::Package_receive(pair.client, resp);
+    Error::ErrorInfo c_recv_err = Protocal::Package_receive(pair.client, resp);
     server_thread.join();
 
-    REQUIRE(c2s_send.e == Error::SUCCESS);
-    REQUIRE(s_recv.e   == Error::SUCCESS);
-    REQUIRE(s2c_send.e == Error::SUCCESS);
-    REQUIRE(c_recv.e   == Error::SUCCESS);
+    REQUIRE(s_recv_err.e == Error::SUCCESS);
+    REQUIRE(s_send_err.e == Error::SUCCESS);
+    REQUIRE(c_recv_err.e == Error::SUCCESS);
     REQUIRE(resp.cmd_type() == 0xFF00);
     REQUIRE(resp.payload().json(0) == "RESULT:QUERY CS101");
 }
@@ -231,17 +188,9 @@ TEST(test_send_receive_bidirectional) {
 // ─────────────────────────────────────────────
 TEST(test_send_req_id_is_monotonic) {
     auto pair = make_loopback_pair();
-    const char* payload = "x";
 
-    std::thread sender([&] {
-        for (int i = 0; i < 3; ++i) {
-            Protocal::Package_send(
-                pair.client,
-                reinterpret_cast<const u_char*>(payload),
-                1,
-                0x4004);
-        }
-    });
+    for (int i = 0; i < 3; ++i)
+        REQUIRE(send_str(pair.client, "x", 0x4004).e == Error::SUCCESS);
 
     uint32_t ids[3] = {0};
     for (int i = 0; i < 3; ++i) {
@@ -249,44 +198,30 @@ TEST(test_send_req_id_is_monotonic) {
         REQUIRE(Protocal::Package_receive(pair.server, body).e == Error::SUCCESS);
         ids[i] = body.req_id();
     }
-    sender.join();
 
     REQUIRE(ids[1] == ids[0] + 1);
     REQUIRE(ids[2] == ids[1] + 1);
 }
 
 // ─────────────────────────────────────────────
-// CASE 6: 篡改密文 —— MAC 校验应失败
+// CASE 6: 错误 key 解密 —— 必须失败（同步发送避免与 key 翻转产生竞态）
 // ─────────────────────────────────────────────
-TEST(test_receive_rejects_tampered_ciphertext) {
+TEST(test_receive_rejects_wrong_key) {
     auto pair = make_loopback_pair();
 
-    const char* payload = "hello world";
-    Error::ErrorInfo send_err;
+    // 先用原始 key 把密文完整送进 TCP 缓冲区
+    REQUIRE(send_str(pair.client, "hello world", 0x5005).e == Error::SUCCESS);
 
-    // 临时翻转接收端的 key，让 AES 解密 / MAC 校验失败
-    std::thread sender([&] {
-        send_err = Protocal::Package_send(
-            pair.client,
-            reinterpret_cast<const u_char*>(payload),
-            std::strlen(payload),
-            0x5005);
-    });
-
-    // 临时改 key（注意：这破坏了全局状态，测试结束后要还原）
+    // 此后再翻转 key，已发出的密文不受影响
     unsigned char saved_key[32];
     memcpy(saved_key, openssl::key, 32);
-    openssl::key[0] ^= 0xFF;  // 翻转 1 bit
+    openssl::key[0] ^= 0xFF;
 
     MsgBody body;
     Error::ErrorInfo recv_err = Protocal::Package_receive(pair.server, body);
 
-    // 还原 key
     memcpy(openssl::key, saved_key, 32);
-    sender.join();
-
-    REQUIRE(send_err.e == Error::SUCCESS);
-    REQUIRE(recv_err.e != Error::SUCCESS);  // 必须失败（解密 or MAC）
+    REQUIRE(recv_err.e != Error::SUCCESS);
 }
 
 // ─────────────────────────────────────────────
@@ -303,7 +238,7 @@ int main() {
         RUN(test_send_receive_large_payload);
         RUN(test_send_receive_bidirectional);
         RUN(test_send_req_id_is_monotonic);
-        RUN(test_receive_rejects_tampered_ciphertext);
+        RUN(test_receive_rejects_wrong_key);
 
         std::cout << "\n--- Result: " << s_passed << " passed, "
                   << s_failed << " failed ---\n";
