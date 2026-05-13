@@ -176,68 +176,30 @@ class Payload final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kSelectedCoursesFieldNumber = 2,
-    kScoresFieldNumber = 3,
-    kUsernameFieldNumber = 1,
+    kJsonFieldNumber = 1,
   };
-  // repeated string selected_courses = 2;
-  int selected_courses_size() const;
+  // repeated bytes json = 1;
+  int json_size() const;
   private:
-  int _internal_selected_courses_size() const;
+  int _internal_json_size() const;
   public:
-  void clear_selected_courses();
-  const std::string& selected_courses(int index) const;
-  std::string* mutable_selected_courses(int index);
-  void set_selected_courses(int index, const std::string& value);
-  void set_selected_courses(int index, std::string&& value);
-  void set_selected_courses(int index, const char* value);
-  void set_selected_courses(int index, const char* value, size_t size);
-  std::string* add_selected_courses();
-  void add_selected_courses(const std::string& value);
-  void add_selected_courses(std::string&& value);
-  void add_selected_courses(const char* value);
-  void add_selected_courses(const char* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& selected_courses() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_selected_courses();
+  void clear_json();
+  const std::string& json(int index) const;
+  std::string* mutable_json(int index);
+  void set_json(int index, const std::string& value);
+  void set_json(int index, std::string&& value);
+  void set_json(int index, const char* value);
+  void set_json(int index, const void* value, size_t size);
+  std::string* add_json();
+  void add_json(const std::string& value);
+  void add_json(std::string&& value);
+  void add_json(const char* value);
+  void add_json(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& json() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_json();
   private:
-  const std::string& _internal_selected_courses(int index) const;
-  std::string* _internal_add_selected_courses();
-  public:
-
-  // repeated int32 scores = 3;
-  int scores_size() const;
-  private:
-  int _internal_scores_size() const;
-  public:
-  void clear_scores();
-  private:
-  int32_t _internal_scores(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
-      _internal_scores() const;
-  void _internal_add_scores(int32_t value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
-      _internal_mutable_scores();
-  public:
-  int32_t scores(int index) const;
-  void set_scores(int index, int32_t value);
-  void add_scores(int32_t value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
-      scores() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
-      mutable_scores();
-
-  // string username = 1;
-  void clear_username();
-  const std::string& username() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_username(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_username();
-  PROTOBUF_NODISCARD std::string* release_username();
-  void set_allocated_username(std::string* username);
-  private:
-  const std::string& _internal_username() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_username(const std::string& value);
-  std::string* _internal_mutable_username();
+  const std::string& _internal_json(int index) const;
+  std::string* _internal_add_json();
   public:
 
   // @@protoc_insertion_point(class_scope:Payload)
@@ -247,10 +209,7 @@ class Payload final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> selected_courses_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t > scores_;
-  mutable std::atomic<int> _scores_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr username_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> json_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_message_2eproto;
 };
@@ -375,11 +334,12 @@ class MsgBody final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kPayloadFieldNumber = 3,
-    kReqIdFieldNumber = 1,
-    kTimestampFieldNumber = 2,
+    kPayloadFieldNumber = 4,
+    kCmdTypeFieldNumber = 1,
+    kReqIdFieldNumber = 2,
+    kTimestampFieldNumber = 3,
   };
-  // .Payload payload = 3;
+  // .Payload payload = 4;
   bool has_payload() const;
   private:
   bool _internal_has_payload() const;
@@ -397,7 +357,16 @@ class MsgBody final :
       ::Payload* payload);
   ::Payload* unsafe_arena_release_payload();
 
-  // uint32 req_id = 1;
+  // uint32 cmd_type = 1;
+  void clear_cmd_type();
+  uint32_t cmd_type() const;
+  void set_cmd_type(uint32_t value);
+  private:
+  uint32_t _internal_cmd_type() const;
+  void _internal_set_cmd_type(uint32_t value);
+  public:
+
+  // uint32 req_id = 2;
   void clear_req_id();
   uint32_t req_id() const;
   void set_req_id(uint32_t value);
@@ -406,7 +375,7 @@ class MsgBody final :
   void _internal_set_req_id(uint32_t value);
   public:
 
-  // uint32 timestamp = 2;
+  // uint32 timestamp = 3;
   void clear_timestamp();
   uint32_t timestamp() const;
   void set_timestamp(uint32_t value);
@@ -423,6 +392,7 @@ class MsgBody final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::Payload* payload_;
+  uint32_t cmd_type_;
   uint32_t req_id_;
   uint32_t timestamp_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -439,183 +409,106 @@ class MsgBody final :
 #endif  // __GNUC__
 // Payload
 
-// string username = 1;
-inline void Payload::clear_username() {
-  username_.ClearToEmpty();
+// repeated bytes json = 1;
+inline int Payload::_internal_json_size() const {
+  return json_.size();
 }
-inline const std::string& Payload::username() const {
-  // @@protoc_insertion_point(field_get:Payload.username)
-  return _internal_username();
+inline int Payload::json_size() const {
+  return _internal_json_size();
 }
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void Payload::set_username(ArgT0&& arg0, ArgT... args) {
- 
- username_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Payload.username)
+inline void Payload::clear_json() {
+  json_.Clear();
 }
-inline std::string* Payload::mutable_username() {
-  std::string* _s = _internal_mutable_username();
-  // @@protoc_insertion_point(field_mutable:Payload.username)
+inline std::string* Payload::add_json() {
+  std::string* _s = _internal_add_json();
+  // @@protoc_insertion_point(field_add_mutable:Payload.json)
   return _s;
 }
-inline const std::string& Payload::_internal_username() const {
-  return username_.Get();
+inline const std::string& Payload::_internal_json(int index) const {
+  return json_.Get(index);
 }
-inline void Payload::_internal_set_username(const std::string& value) {
-  
-  username_.Set(value, GetArenaForAllocation());
+inline const std::string& Payload::json(int index) const {
+  // @@protoc_insertion_point(field_get:Payload.json)
+  return _internal_json(index);
 }
-inline std::string* Payload::_internal_mutable_username() {
-  
-  return username_.Mutable(GetArenaForAllocation());
+inline std::string* Payload::mutable_json(int index) {
+  // @@protoc_insertion_point(field_mutable:Payload.json)
+  return json_.Mutable(index);
 }
-inline std::string* Payload::release_username() {
-  // @@protoc_insertion_point(field_release:Payload.username)
-  return username_.Release();
+inline void Payload::set_json(int index, const std::string& value) {
+  json_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:Payload.json)
 }
-inline void Payload::set_allocated_username(std::string* username) {
-  if (username != nullptr) {
-    
-  } else {
-    
-  }
-  username_.SetAllocated(username, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (username_.IsDefault()) {
-    username_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Payload.username)
+inline void Payload::set_json(int index, std::string&& value) {
+  json_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:Payload.json)
 }
-
-// repeated string selected_courses = 2;
-inline int Payload::_internal_selected_courses_size() const {
-  return selected_courses_.size();
-}
-inline int Payload::selected_courses_size() const {
-  return _internal_selected_courses_size();
-}
-inline void Payload::clear_selected_courses() {
-  selected_courses_.Clear();
-}
-inline std::string* Payload::add_selected_courses() {
-  std::string* _s = _internal_add_selected_courses();
-  // @@protoc_insertion_point(field_add_mutable:Payload.selected_courses)
-  return _s;
-}
-inline const std::string& Payload::_internal_selected_courses(int index) const {
-  return selected_courses_.Get(index);
-}
-inline const std::string& Payload::selected_courses(int index) const {
-  // @@protoc_insertion_point(field_get:Payload.selected_courses)
-  return _internal_selected_courses(index);
-}
-inline std::string* Payload::mutable_selected_courses(int index) {
-  // @@protoc_insertion_point(field_mutable:Payload.selected_courses)
-  return selected_courses_.Mutable(index);
-}
-inline void Payload::set_selected_courses(int index, const std::string& value) {
-  selected_courses_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:Payload.selected_courses)
-}
-inline void Payload::set_selected_courses(int index, std::string&& value) {
-  selected_courses_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:Payload.selected_courses)
-}
-inline void Payload::set_selected_courses(int index, const char* value) {
+inline void Payload::set_json(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  selected_courses_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:Payload.selected_courses)
+  json_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:Payload.json)
 }
-inline void Payload::set_selected_courses(int index, const char* value, size_t size) {
-  selected_courses_.Mutable(index)->assign(
+inline void Payload::set_json(int index, const void* value, size_t size) {
+  json_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:Payload.selected_courses)
+  // @@protoc_insertion_point(field_set_pointer:Payload.json)
 }
-inline std::string* Payload::_internal_add_selected_courses() {
-  return selected_courses_.Add();
+inline std::string* Payload::_internal_add_json() {
+  return json_.Add();
 }
-inline void Payload::add_selected_courses(const std::string& value) {
-  selected_courses_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:Payload.selected_courses)
+inline void Payload::add_json(const std::string& value) {
+  json_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:Payload.json)
 }
-inline void Payload::add_selected_courses(std::string&& value) {
-  selected_courses_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:Payload.selected_courses)
+inline void Payload::add_json(std::string&& value) {
+  json_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:Payload.json)
 }
-inline void Payload::add_selected_courses(const char* value) {
+inline void Payload::add_json(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  selected_courses_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:Payload.selected_courses)
+  json_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:Payload.json)
 }
-inline void Payload::add_selected_courses(const char* value, size_t size) {
-  selected_courses_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:Payload.selected_courses)
+inline void Payload::add_json(const void* value, size_t size) {
+  json_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:Payload.json)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-Payload::selected_courses() const {
-  // @@protoc_insertion_point(field_list:Payload.selected_courses)
-  return selected_courses_;
+Payload::json() const {
+  // @@protoc_insertion_point(field_list:Payload.json)
+  return json_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-Payload::mutable_selected_courses() {
-  // @@protoc_insertion_point(field_mutable_list:Payload.selected_courses)
-  return &selected_courses_;
-}
-
-// repeated int32 scores = 3;
-inline int Payload::_internal_scores_size() const {
-  return scores_.size();
-}
-inline int Payload::scores_size() const {
-  return _internal_scores_size();
-}
-inline void Payload::clear_scores() {
-  scores_.Clear();
-}
-inline int32_t Payload::_internal_scores(int index) const {
-  return scores_.Get(index);
-}
-inline int32_t Payload::scores(int index) const {
-  // @@protoc_insertion_point(field_get:Payload.scores)
-  return _internal_scores(index);
-}
-inline void Payload::set_scores(int index, int32_t value) {
-  scores_.Set(index, value);
-  // @@protoc_insertion_point(field_set:Payload.scores)
-}
-inline void Payload::_internal_add_scores(int32_t value) {
-  scores_.Add(value);
-}
-inline void Payload::add_scores(int32_t value) {
-  _internal_add_scores(value);
-  // @@protoc_insertion_point(field_add:Payload.scores)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
-Payload::_internal_scores() const {
-  return scores_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >&
-Payload::scores() const {
-  // @@protoc_insertion_point(field_list:Payload.scores)
-  return _internal_scores();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
-Payload::_internal_mutable_scores() {
-  return &scores_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< int32_t >*
-Payload::mutable_scores() {
-  // @@protoc_insertion_point(field_mutable_list:Payload.scores)
-  return _internal_mutable_scores();
+Payload::mutable_json() {
+  // @@protoc_insertion_point(field_mutable_list:Payload.json)
+  return &json_;
 }
 
 // -------------------------------------------------------------------
 
 // MsgBody
 
-// uint32 req_id = 1;
+// uint32 cmd_type = 1;
+inline void MsgBody::clear_cmd_type() {
+  cmd_type_ = 0u;
+}
+inline uint32_t MsgBody::_internal_cmd_type() const {
+  return cmd_type_;
+}
+inline uint32_t MsgBody::cmd_type() const {
+  // @@protoc_insertion_point(field_get:MsgBody.cmd_type)
+  return _internal_cmd_type();
+}
+inline void MsgBody::_internal_set_cmd_type(uint32_t value) {
+  
+  cmd_type_ = value;
+}
+inline void MsgBody::set_cmd_type(uint32_t value) {
+  _internal_set_cmd_type(value);
+  // @@protoc_insertion_point(field_set:MsgBody.cmd_type)
+}
+
+// uint32 req_id = 2;
 inline void MsgBody::clear_req_id() {
   req_id_ = 0u;
 }
@@ -635,7 +528,7 @@ inline void MsgBody::set_req_id(uint32_t value) {
   // @@protoc_insertion_point(field_set:MsgBody.req_id)
 }
 
-// uint32 timestamp = 2;
+// uint32 timestamp = 3;
 inline void MsgBody::clear_timestamp() {
   timestamp_ = 0u;
 }
@@ -655,7 +548,7 @@ inline void MsgBody::set_timestamp(uint32_t value) {
   // @@protoc_insertion_point(field_set:MsgBody.timestamp)
 }
 
-// .Payload payload = 3;
+// .Payload payload = 4;
 inline bool MsgBody::_internal_has_payload() const {
   return this != internal_default_instance() && payload_ != nullptr;
 }

@@ -32,6 +32,10 @@ add_custom_command(TARGET test_openssl POST_BUILD
         ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libcrypto-3-x64.dll
         ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libssl-3-x64.dll
         $<TARGET_FILE_DIR:test_openssl>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/key/app.key
+        $<TARGET_FILE_DIR:test_openssl>
     COMMENT "Copying OpenSSL DLLs for test_openssl"
 )
 
@@ -51,9 +55,33 @@ target_link_libraries(test_log
         dcn_driver
 )
 
+add_executable(test_protocol
+        test_protocol.cpp
+)
+target_link_libraries(test_protocol
+    PRIVATE
+        dcn_driver
+        openssl
+        protobuf
+        Ws2_32
+)
+
+add_custom_command(TARGET test_protocol POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libcrypto-3-x64.dll
+        ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libssl-3-x64.dll
+        $<TARGET_FILE_DIR:test_protocol>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/key/app.key
+        $<TARGET_FILE_DIR:test_protocol>
+    COMMENT "Copying OpenSSL DLLs and app.key for test_protocol"
+)
+
 enable_testing()
 add_test(NAME test_database      COMMAND test_database
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME test_database_file COMMAND test_database_file
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME test_protocol      COMMAND test_protocol)
 

@@ -22,10 +22,7 @@ namespace _pbi = _pb::internal;
 
 PROTOBUF_CONSTEXPR Payload::Payload(
     ::_pbi::ConstantInitialized)
-  : selected_courses_()
-  , scores_()
-  , _scores_cached_byte_size_(0)
-  , username_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+  : json_(){}
 struct PayloadDefaultTypeInternal {
   PROTOBUF_CONSTEXPR PayloadDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -38,6 +35,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR MsgBody::MsgBody(
     ::_pbi::ConstantInitialized)
   : payload_(nullptr)
+  , cmd_type_(0u)
   , req_id_(0u)
   , timestamp_(0u){}
 struct MsgBodyDefaultTypeInternal {
@@ -60,22 +58,21 @@ const uint32_t TableStruct_message_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::Payload, username_),
-  PROTOBUF_FIELD_OFFSET(::Payload, selected_courses_),
-  PROTOBUF_FIELD_OFFSET(::Payload, scores_),
+  PROTOBUF_FIELD_OFFSET(::Payload, json_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::MsgBody, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::MsgBody, cmd_type_),
   PROTOBUF_FIELD_OFFSET(::MsgBody, req_id_),
   PROTOBUF_FIELD_OFFSET(::MsgBody, timestamp_),
   PROTOBUF_FIELD_OFFSET(::MsgBody, payload_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::Payload)},
-  { 9, -1, -1, sizeof(::MsgBody)},
+  { 7, -1, -1, sizeof(::MsgBody)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -84,15 +81,14 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_message_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\rmessage.proto\"E\n\007Payload\022\020\n\010username\030\001"
-  " \001(\t\022\030\n\020selected_courses\030\002 \003(\t\022\016\n\006scores"
-  "\030\003 \003(\005\"G\n\007MsgBody\022\016\n\006req_id\030\001 \001(\r\022\021\n\ttim"
-  "estamp\030\002 \001(\r\022\031\n\007payload\030\003 \001(\0132\010.Payloadb"
-  "\006proto3"
+  "\n\rmessage.proto\"\027\n\007Payload\022\014\n\004json\030\001 \003(\014"
+  "\"Y\n\007MsgBody\022\020\n\010cmd_type\030\001 \001(\r\022\016\n\006req_id\030"
+  "\002 \001(\r\022\021\n\ttimestamp\030\003 \001(\r\022\031\n\007payload\030\004 \001("
+  "\0132\010.Payloadb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_message_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_message_2eproto = {
-    false, false, 167, descriptor_table_protodef_message_2eproto,
+    false, false, 139, descriptor_table_protodef_message_2eproto,
     "message.proto",
     &descriptor_table_message_2eproto_once, nullptr, 0, 2,
     schemas, file_default_instances, TableStruct_message_2eproto::offsets,
@@ -115,32 +111,18 @@ class Payload::_Internal {
 Payload::Payload(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  selected_courses_(arena),
-  scores_(arena) {
+  json_(arena) {
   SharedCtor();
   // @@protoc_insertion_point(arena_constructor:Payload)
 }
 Payload::Payload(const Payload& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
-      selected_courses_(from.selected_courses_),
-      scores_(from.scores_) {
+      json_(from.json_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  username_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    username_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_username().empty()) {
-    username_.Set(from._internal_username(), 
-      GetArenaForAllocation());
-  }
   // @@protoc_insertion_point(copy_constructor:Payload)
 }
 
 inline void Payload::SharedCtor() {
-username_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  username_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 Payload::~Payload() {
@@ -154,7 +136,6 @@ Payload::~Payload() {
 
 inline void Payload::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  username_.Destroy();
 }
 
 void Payload::SetCachedSize(int size) const {
@@ -167,9 +148,7 @@ void Payload::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  selected_courses_.Clear();
-  scores_.Clear();
-  username_.ClearToEmpty();
+  json_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -179,39 +158,17 @@ const char* Payload::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // string username = 1;
+      // repeated bytes json = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_username();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "Payload.username"));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated string selected_courses = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_selected_courses();
+            auto str = _internal_add_json();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "Payload.selected_courses"));
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated int32 scores = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedInt32Parser(_internal_mutable_scores(), ptr, ctx);
-          CHK_(ptr);
-        } else if (static_cast<uint8_t>(tag) == 24) {
-          _internal_add_scores(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr));
-          CHK_(ptr);
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
         } else
           goto handle_unusual;
         continue;
@@ -244,33 +201,10 @@ uint8_t* Payload::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string username = 1;
-  if (!this->_internal_username().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_username().data(), static_cast<int>(this->_internal_username().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Payload.username");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_username(), target);
-  }
-
-  // repeated string selected_courses = 2;
-  for (int i = 0, n = this->_internal_selected_courses_size(); i < n; i++) {
-    const auto& s = this->_internal_selected_courses(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "Payload.selected_courses");
-    target = stream->WriteString(2, s, target);
-  }
-
-  // repeated int32 scores = 3;
-  {
-    int byte_size = _scores_cached_byte_size_.load(std::memory_order_relaxed);
-    if (byte_size > 0) {
-      target = stream->WriteInt32Packed(
-          3, _internal_scores(), byte_size, target);
-    }
+  // repeated bytes json = 1;
+  for (int i = 0, n = this->_internal_json_size(); i < n; i++) {
+    const auto& s = this->_internal_json(i);
+    target = stream->WriteBytes(1, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -289,33 +223,12 @@ size_t Payload::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated string selected_courses = 2;
+  // repeated bytes json = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(selected_courses_.size());
-  for (int i = 0, n = selected_courses_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      selected_courses_.Get(i));
-  }
-
-  // repeated int32 scores = 3;
-  {
-    size_t data_size = ::_pbi::WireFormatLite::
-      Int32Size(this->scores_);
-    if (data_size > 0) {
-      total_size += 1 +
-        ::_pbi::WireFormatLite::Int32Size(static_cast<int32_t>(data_size));
-    }
-    int cached_size = ::_pbi::ToCachedSize(data_size);
-    _scores_cached_byte_size_.store(cached_size,
-                                    std::memory_order_relaxed);
-    total_size += data_size;
-  }
-
-  // string username = 1;
-  if (!this->_internal_username().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_username());
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(json_.size());
+  for (int i = 0, n = json_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      json_.Get(i));
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
@@ -340,11 +253,7 @@ void Payload::MergeFrom(const Payload& from) {
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  selected_courses_.MergeFrom(from.selected_courses_);
-  scores_.MergeFrom(from.scores_);
-  if (!from._internal_username().empty()) {
-    _internal_set_username(from._internal_username());
-  }
+  json_.MergeFrom(from.json_);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -361,15 +270,8 @@ bool Payload::IsInitialized() const {
 
 void Payload::InternalSwap(Payload* other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  selected_courses_.InternalSwap(&other->selected_courses_);
-  scores_.InternalSwap(&other->scores_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &username_, lhs_arena,
-      &other->username_, rhs_arena
-  );
+  json_.InternalSwap(&other->json_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Payload::GetMetadata() const {
@@ -403,9 +305,9 @@ MsgBody::MsgBody(const MsgBody& from)
   } else {
     payload_ = nullptr;
   }
-  ::memcpy(&req_id_, &from.req_id_,
+  ::memcpy(&cmd_type_, &from.cmd_type_,
     static_cast<size_t>(reinterpret_cast<char*>(&timestamp_) -
-    reinterpret_cast<char*>(&req_id_)) + sizeof(timestamp_));
+    reinterpret_cast<char*>(&cmd_type_)) + sizeof(timestamp_));
   // @@protoc_insertion_point(copy_constructor:MsgBody)
 }
 
@@ -444,9 +346,9 @@ void MsgBody::Clear() {
     delete payload_;
   }
   payload_ = nullptr;
-  ::memset(&req_id_, 0, static_cast<size_t>(
+  ::memset(&cmd_type_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&timestamp_) -
-      reinterpret_cast<char*>(&req_id_)) + sizeof(timestamp_));
+      reinterpret_cast<char*>(&cmd_type_)) + sizeof(timestamp_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -456,25 +358,33 @@ const char* MsgBody::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // uint32 req_id = 1;
+      // uint32 cmd_type = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          cmd_type_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 req_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
           req_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint32 timestamp = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+      // uint32 timestamp = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           timestamp_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .Payload payload = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+      // .Payload payload = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
           ptr = ctx->ParseMessage(_internal_mutable_payload(), ptr);
           CHK_(ptr);
         } else
@@ -509,22 +419,28 @@ uint8_t* MsgBody::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint32 req_id = 1;
+  // uint32 cmd_type = 1;
+  if (this->_internal_cmd_type() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_cmd_type(), target);
+  }
+
+  // uint32 req_id = 2;
   if (this->_internal_req_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_req_id(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_req_id(), target);
   }
 
-  // uint32 timestamp = 2;
+  // uint32 timestamp = 3;
   if (this->_internal_timestamp() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_timestamp(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_timestamp(), target);
   }
 
-  // .Payload payload = 3;
+  // .Payload payload = 4;
   if (this->_internal_has_payload()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(3, _Internal::payload(this),
+      InternalWriteMessage(4, _Internal::payload(this),
         _Internal::payload(this).GetCachedSize(), target, stream);
   }
 
@@ -544,19 +460,24 @@ size_t MsgBody::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .Payload payload = 3;
+  // .Payload payload = 4;
   if (this->_internal_has_payload()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *payload_);
   }
 
-  // uint32 req_id = 1;
+  // uint32 cmd_type = 1;
+  if (this->_internal_cmd_type() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_cmd_type());
+  }
+
+  // uint32 req_id = 2;
   if (this->_internal_req_id() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_req_id());
   }
 
-  // uint32 timestamp = 2;
+  // uint32 timestamp = 3;
   if (this->_internal_timestamp() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_timestamp());
   }
@@ -585,6 +506,9 @@ void MsgBody::MergeFrom(const MsgBody& from) {
 
   if (from._internal_has_payload()) {
     _internal_mutable_payload()->::Payload::MergeFrom(from._internal_payload());
+  }
+  if (from._internal_cmd_type() != 0) {
+    _internal_set_cmd_type(from._internal_cmd_type());
   }
   if (from._internal_req_id() != 0) {
     _internal_set_req_id(from._internal_req_id());
