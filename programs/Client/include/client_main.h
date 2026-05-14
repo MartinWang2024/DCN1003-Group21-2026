@@ -1,12 +1,5 @@
 #pragma once
+#include <string>
 
-#include <winsock2.h>
-#include <atomic>
-
-constexpr const char* SERVER_IP = "127.0.0.1";
-constexpr int         PORT      = 9001;
-constexpr int         BUF_LEN   = 4096;
-
-extern std::atomic<bool> running;
-
-void recv_thread(SOCKET sock);
+constexpr const char* DEFAULT_SERVER_IP = "127.0.0.1";
+constexpr int         DEFAULT_PORT      = 9001;
