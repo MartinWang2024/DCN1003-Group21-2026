@@ -6,6 +6,20 @@ namespace dcn_database {
 
 namespace {
 
+constexpr int kBusyTimeoutMs = 5000;
+
+bool enable_wal_mode(sqlite3* db, std::string& out_error) {
+	char* err_msg = nullptr;
+	const int rc = sqlite3_exec(db, "PRAGMA journal_mode=WAL;", nullptr, nullptr, &err_msg);
+	if (rc != SQLITE_OK) {
+		out_error = err_msg == nullptr ? "Failed to enable WAL mode." : err_msg;
+		sqlite3_free(err_msg);
+		return false;
+	}
+
+	return true;
+}
+
 const char* safe_col_text(sqlite3_stmt* stmt, int col) {
 	const unsigned char* text = sqlite3_column_text(stmt, col);
 	return text == nullptr ? "" : reinterpret_cast<const char*>(text);
@@ -31,12 +45,35 @@ Database::~Database() {
 
 bool Database::open(const std::string& db_path) {
 	close();
-	const int rc = sqlite3_open(db_path.c_str(), &db_);
+	const int rc = sqlite3_open_v2(
+		db_path.c_str(),
+		&db_,
+		SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+		nullptr);
 	if (rc != SQLITE_OK) {
+		if (db_ != nullptr) {
+			set_error(sqlite3_errmsg(db_));
+		} else {
+			set_error(sqlite3_errstr(rc));
+		}
+		close();
+		return false;
+	}
+
+	const int busy_timeout_rc = sqlite3_busy_timeout(db_, kBusyTimeoutMs);
+	if (busy_timeout_rc != SQLITE_OK) {
 		set_error(sqlite3_errmsg(db_));
 		close();
 		return false;
 	}
+
+	std::string wal_error;
+	if (!enable_wal_mode(db_, wal_error)) {
+		set_error(wal_error);
+		close();
+		return false;
+	}
+
 	return true;
 }
 
@@ -65,6 +102,10 @@ CourseRepository::CourseRepository(const std::string& db_path) {
 	open(db_path);
 }
 
+CourseRepository::CourseRepository() {
+	open("data/Course.db");
+}
+
 bool CourseRepository::open(const std::string& db_path) {
 	return db_.open(db_path);
 }
@@ -74,6 +115,7 @@ void CourseRepository::close() {
 }
 
 bool CourseRepository::initialize_schema() const {
+	//TODO: creat db
 	sqlite3* db = db_.raw_handle();
 	if (db == nullptr) {
 		db_.set_error("Database is not open.");
@@ -290,6 +332,10 @@ bool CourseRepository::update(const Course& course) const {
 
 AdministratorRepository::AdministratorRepository(const std::string& db_path) {
 	open(db_path);
+}
+
+AdministratorRepository::AdministratorRepository() {
+	open("data/Admin.db");
 }
 
 bool AdministratorRepository::open(const std::string& db_path) {

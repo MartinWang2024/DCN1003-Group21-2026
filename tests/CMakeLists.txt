@@ -18,6 +18,33 @@ target_link_libraries(test_database_file
         sqlite3
 )
 
+add_executable(test_database_real_query
+    test_database_real_query.cpp
+)
+target_link_libraries(test_database_real_query
+    PRIVATE
+        dcn_driver
+        sqlite3
+)
+
+add_executable(test_database_curd
+        test_database_curd.cpp
+)
+target_link_libraries(test_database_curd
+        PRIVATE
+        dcn_driver
+        sqlite3
+)
+
+add_executable(test_database_multithread
+    test_database_multithread.cpp
+)
+target_link_libraries(test_database_multithread
+    PRIVATE
+        dcn_driver
+        sqlite3
+)
+
 add_executable(test_openssl
         test_openssl.cpp
 )
@@ -82,6 +109,10 @@ enable_testing()
 add_test(NAME test_database      COMMAND test_database
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME test_database_file COMMAND test_database_file
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME test_database_real_query COMMAND test_database_real_query
+         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME test_database_multithread COMMAND test_database_multithread
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME test_protocol      COMMAND test_protocol)
 

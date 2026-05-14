@@ -3,9 +3,3 @@
 # 编译产物
 build/
 cmake-build-debug/
-
-# 数据库文件（运行时生成，不进 git）
-*.db
-*.db-shm
-*.db-wal
-# 但保留 data/ 目录本身（通过 data/.gitkeep）
