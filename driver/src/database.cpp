@@ -119,7 +119,7 @@ CourseRepository::CourseRepository(const std::string& db_path) {
 }
 
 CourseRepository::CourseRepository() {
-	open("data/Course.db");
+	open("data/courses.db");
 }
 
 bool CourseRepository::open(const std::string& db_path) {
@@ -350,7 +350,7 @@ AdministratorRepository::AdministratorRepository(const std::string& db_path) {
 }
 
 AdministratorRepository::AdministratorRepository() {
-	open("data/Admin.db");
+	open("data/admins.db");
 }
 
 bool AdministratorRepository::open(const std::string& db_path) {
