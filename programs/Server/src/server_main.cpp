@@ -1,139 +1,115 @@
 #include "server_main.h"
+
+#include "cmdreg.h"
+#include "listener.h"
+#include "log.h"
+#include "protocol.h"
+#include "winsock_guard.h"
+
 #include <ws2tcpip.h>
 #include <iostream>
 #include <thread>
+#include <utility>
 
-bool send_line(SOCKET sock, const std::string& text) {
-    std::string out = text + "\r\n";
-    const char* data = out.c_str();
-    int total_sent = 0;
-    int to_send = static_cast<int>(out.size());
+using namespace Protocal::Dispatch;
 
-    while (total_sent < to_send) {
-        int sent = send(sock, data + total_sent, to_send - total_sent, 0);
-        if (sent == SOCKET_ERROR || sent == 0) {
-            return false;
-        }
-        total_sent += sent;
-    }
-    return true;
-}
+void handle_client(TcpSocket::SocketHandler sh,
+                   dcn_database::CourseRepository& courses,
+                   dcn_database::AdministratorRepository& admins,
+                   Dispatcher& dispatcher)
+{
+    Session_t session;
 
-// 每个客户端连接的处理线程
-void handle_client(SOCKET client_sock, sockaddr_in client_addr) {
-    char ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
-    int  port = ntohs(client_addr.sin_port);
-    std::cout << "[+] Client connected: " << ip << ":" << port << std::endl;
-
-    char buf[BUF_LEN];
-    std::string pending;
-    while (true) {
-        int bytes = recv(client_sock, buf, BUF_LEN - 1, 0);
-        if (bytes <= 0) {
-            std::cout << "[-] Client disconnected: " << ip << ":" << port << std::endl;
+    while (true)
+    {
+        MsgBody body;
+        auto rerr = Protocal::Package_receive(sh, body);
+        if (rerr.e != Error::SUCCESS)
+        {
+            print_log(info, "handle_client: recv ended (%s)", rerr.message.c_str());
             break;
         }
-        buf[bytes] = '\0';
-        pending.append(buf, bytes);
 
-        size_t pos = 0;
-        while ((pos = pending.find('\n')) != std::string::npos) {
-            std::string line = pending.substr(0, pos);
-            pending.erase(0, pos + 1);
-            if (!line.empty() && line.back() == '\r') {
-                line.pop_back();
-            }
-            if (line.empty()) {
-                continue;
-            }
+        ReqContext_t ctx{body, session, courses, admins};
+        Response_t resp = dispatcher.dispatch(ctx);
 
-            std::cout << "[" << ip << ":" << port << "] " << line << std::endl;
-            if (line == "quit" || line == "exit") {
-                if (!send_line(client_sock, "BYE")) {
-                    break;
-                }
-                std::cout << "[*] Client requested close: " << ip << ":" << port << std::endl;
-                closesocket(client_sock);
-                return;
-            }
-
-            if (line == "ping" || line == "PING") {
-                if (!send_line(client_sock, "PONG")) {
-                    break;
-                }
-                continue;
-            }
-
-            if (!send_line(client_sock, "ECHO: " + line)) {
-                break;
-            }
+        auto serr = Dispatcher::send_response_s(sh, resp);
+        if (serr.e != Error::SUCCESS)
+        {
+            print_log(warn, "handle_client: send failed (%s)", serr.message.c_str());
+            break;
         }
     }
 
-    closesocket(client_sock);
+    print_log(info, "handle_client: session for '%s' closed",
+              session.name.empty() ? "<anon>" : session.name.c_str());
 }
 
-int main() {
-    // 初始化 Winsock
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        std::cerr << "WSAStartup failed: " << WSAGetLastError() << std::endl;
+
+int main()
+{
+    TcpSocket::WinsockGuard winsock;
+    if (!winsock.ok())
+    {
+        std::cerr << winsock.last_error().message << std::endl;
         return 1;
     }
 
-    // 创建监听 socket
-    SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (listen_sock == INVALID_SOCKET) {
-        std::cerr << "socket() failed: " << WSAGetLastError() << std::endl;
-        WSACleanup();
+    if (openssl::readAppKey(openssl::key, "app.key").e != Error::SUCCESS)
+    {
+        std::cerr << "Failed to load app.key from working directory" << std::endl;
         return 1;
     }
 
-    // 允许地址复用
-    int opt = 1;
-    setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR,
-               reinterpret_cast<const char*>(&opt), sizeof(opt));
-
-    // 绑定
-    sockaddr_in addr{};
-    addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port        = htons(PORT);
-    if (bind(listen_sock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR) {
-        std::cerr << "bind() failed: " << WSAGetLastError() << std::endl;
-        closesocket(listen_sock);
-        WSACleanup();
+    dcn_database::CourseRepository courses;
+    dcn_database::AdministratorRepository admins;
+    if (!courses.open(DB_COURSES_PATH) || !courses.initialize_schema())
+    {
+        std::cerr << "Failed to open/init courses DB: " << courses.last_error() << std::endl;
         return 1;
     }
-
-    // 监听
-    if (listen(listen_sock, BACKLOG) == SOCKET_ERROR) {
-        std::cerr << "listen() failed: " << WSAGetLastError() << std::endl;
-        closesocket(listen_sock);
-        WSACleanup();
+    if (!admins.open(DB_ADMINS_PATH) || !admins.initialize_schema())
+    {
+        std::cerr << "Failed to open/init admins DB: " << admins.last_error() << std::endl;
         return 1;
     }
+    // 首次启动注入默认管理员, 否则任何客户端都登不上
+    if (!admins.verify_login("admin", "admin123"))
+    {
+        admins.insert_or_replace({"admin", "admin123"});
+        print_log(info, "Default admin account injected: admin/admin123");
+    }
 
-    std::cout << "[*] Server listening on port " << PORT << " ..." << std::endl;
+    Dispatcher dispatcher;
+    register_all_server(dispatcher);
 
-    // Accept 循环
-    while (true) {
+    SOCKET listen_sock = create_listener(PORT, BACKLOG);
+    if (listen_sock == INVALID_SOCKET) return 1;
+
+    while (true)
+    {
         sockaddr_in client_addr{};
         int addr_len = sizeof(client_addr);
         SOCKET client_sock = accept(listen_sock,
                                     reinterpret_cast<sockaddr*>(&client_addr),
                                     &addr_len);
-        if (client_sock == INVALID_SOCKET) {
+        if (client_sock == INVALID_SOCKET)
+        {
             std::cerr << "accept() failed: " << WSAGetLastError() << std::endl;
             continue;
         }
 
-        // 为每个客户端创建独立线程
-        std::thread(handle_client, client_sock, client_addr).detach();
+        char ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
+        print_log(info, "[+] Client connected: %s:%d", ip, ntohs(client_addr.sin_port));
+
+        TcpSocket::SocketHandler sh(client_sock, client_addr);
+        std::thread(handle_client,
+                    std::move(sh),
+                    std::ref(courses), std::ref(admins),
+                    std::ref(dispatcher)).detach();
     }
 
     closesocket(listen_sock);
-    WSACleanup();
     return 0;
 }

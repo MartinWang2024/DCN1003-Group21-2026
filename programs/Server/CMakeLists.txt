@@ -1,6 +1,7 @@
 add_executable(dcn_server
 		src/server_main.cpp
 		src/cmdreg.cpp
+		src/listener.cpp
 )
 
 target_include_directories(dcn_server
