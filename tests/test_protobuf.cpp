@@ -1,68 +1,96 @@
 #include "message.pb.h"
 #include "test.h"
 
-
+// ─────────────────────────────────────────────
+// Protobuf 序列化 / 反序列化测试
+// Proto 结构:
+//   message Payload  { repeated bytes json = 1; }
+//   message MsgBody  { uint32 cmd_type=1; uint32 req_id=2;
+//                      uint32 timestamp=3; Payload payload=4; }
+// ─────────────────────────────────────────────
 
 TEST(test_protobuf_pack)
 {
-    // 1. 创建一个消息对象
     MsgBody body;
+    body.set_cmd_type(1);
     body.set_req_id(999);
 
-    // 2. 往数组（repeated）里加点东西
     Payload* payload = body.mutable_payload();
-    payload->add_selected_courses("Math");
+    payload->add_json(R"({"course":"Math"})");
 
-    // 3. 序列化：变成二进制字符串
     std::string binary_data;
     body.SerializeToString(&binary_data);
 
     std::cout << "打包成功！二进制数据的长度是: " << binary_data.length() << " 字节" << std::endl;
+    REQUIRE(!binary_data.empty());
 }
 
 TEST(test_protobuf_unpack)
 {
+    // ── 构建消息 ──────────────────────────────
     MsgBody body;
-
-    // 2. 设置普通变量
+    body.set_cmd_type(2);
     body.set_req_id(10086);
     body.set_timestamp(1698144000);
 
-    // 3. 拿到里面的 payload 对象的指针
     Payload* payload = body.mutable_payload();
-    payload->set_username("stu001");
+    payload->add_json(R"({"course":"Math","score":85})");
+    payload->add_json(R"({"course":"English","score":92})");
+    payload->add_json(R"({"course":"Computer Science","score":78})");
 
-    // 每次调用 add_ ，就会往数组里塞入一个新的元素
-    payload->add_selected_courses("Math");
-    payload->add_selected_courses("English");
-    payload->add_selected_courses("Computer Science");
-
-    payload->add_scores(85);
-    payload->add_scores(92);
-    payload->add_scores(78);
-
-    // 5. 将这些数据序列化
+    // ── 序列化 ────────────────────────────────
     std::string binary_data;
     body.SerializeToString(&binary_data);
 
+    // ── 反序列化 ──────────────────────────────
+    MsgBody received;
+    REQUIRE(received.ParseFromString(binary_data));
 
-    MsgBody received_body;
-    // 把收到的二进制串解包反序列化
-    received_body.ParseFromString(binary_data);
+    // ── 验证标量字段 ──────────────────────────
+    REQUIRE(received.cmd_type()  == 2);
+    REQUIRE(received.req_id()    == 10086);
+    REQUIRE(received.timestamp() == 1698144000);
 
-    REQUIRE(received_body.req_id() == 10086);
-    REQUIRE(received_body.timestamp() == 1698144000);
-
-    int list[3] = {85, 92, 78};
-    for (int i = 0; i < received_body.payload().scores_size(); i++) {
-        REQUIRE(received_body.payload().scores(i) == list[i]);
-    }
+    // ── 验证 payload.json 数组 ─────────────────
+    REQUIRE(received.payload().json_size() == 3);
+    REQUIRE(received.payload().json(0) == R"({"course":"Math","score":85})");
+    REQUIRE(received.payload().json(1) == R"({"course":"English","score":92})");
+    REQUIRE(received.payload().json(2) == R"({"course":"Computer Science","score":78})");
 }
 
 TEST(test_build_up_msg)
 {
+    // 构建一条完整消息并验证序列化 / 反序列化往返一致
     MsgBody body;
-    body.set_req_id()
+    body.set_cmd_type(3);
+    body.set_req_id(42);
+    body.set_timestamp(0);
+    body.mutable_payload()->add_json(R"({"key":"value"})");
+
+    std::string bin;
+    REQUIRE(body.SerializeToString(&bin));
+
+    MsgBody copy;
+    REQUIRE(copy.ParseFromString(bin));
+    REQUIRE(copy.cmd_type()            == 3);
+    REQUIRE(copy.req_id()              == 42);
+    REQUIRE(copy.payload().json_size() == 1);
+    REQUIRE(copy.payload().json(0)     == R"({"key":"value"})");
+}
+
+TEST(test_empty_payload)
+{
+    // payload 为空时仍能正常序列化 / 反序列化
+    MsgBody body;
+    body.set_req_id(1);
+
+    std::string bin;
+    REQUIRE(body.SerializeToString(&bin));
+
+    MsgBody copy;
+    REQUIRE(copy.ParseFromString(bin));
+    REQUIRE(copy.req_id()              == 1);
+    REQUIRE(copy.payload().json_size() == 0);
 }
 
 // ─────────────────────────────────────────────
@@ -72,6 +100,8 @@ int main() {
     std::cout << "--- Serialization Testing ---\n";
     RUN(test_protobuf_pack);
     RUN(test_protobuf_unpack);
+    RUN(test_build_up_msg);
+    RUN(test_empty_payload);
 
     std::cout << "\n--- Result: "
               << s_passed << " passed, "
@@ -79,3 +109,4 @@ int main() {
 
     return s_failed == 0 ? 0 : 1;
 }
+

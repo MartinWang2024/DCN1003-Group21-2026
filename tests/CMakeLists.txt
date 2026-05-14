@@ -1,50 +1,5 @@
 include_directories(include)
 
-add_executable(test_database
-    test_database.cpp
-)
-target_link_libraries(test_database
-    PRIVATE
-        dcn_driver
-        sqlite3
-)
-
-add_executable(test_database_file
-    test_database_file.cpp
-)
-target_link_libraries(test_database_file
-    PRIVATE
-        dcn_driver
-        sqlite3
-)
-
-add_executable(test_database_real_query
-    test_database_real_query.cpp
-)
-target_link_libraries(test_database_real_query
-    PRIVATE
-        dcn_driver
-        sqlite3
-)
-
-add_executable(test_database_curd
-        test_database_curd.cpp
-)
-target_link_libraries(test_database_curd
-        PRIVATE
-        dcn_driver
-        sqlite3
-)
-
-add_executable(test_database_multithread
-    test_database_multithread.cpp
-)
-target_link_libraries(test_database_multithread
-    PRIVATE
-        dcn_driver
-        sqlite3
-)
-
 add_executable(test_openssl
         test_openssl.cpp
 )
@@ -106,6 +61,15 @@ add_custom_command(TARGET test_protocol POST_BUILD
 )
 
 enable_testing()
+
+add_executable(test_database
+        test_database.cpp
+)
+target_link_libraries(test_database
+    PRIVATE
+        dcn_driver
+)
+
 add_test(NAME test_database      COMMAND test_database
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME test_database_file COMMAND test_database_file

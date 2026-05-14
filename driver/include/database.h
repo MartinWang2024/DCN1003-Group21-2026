@@ -36,6 +36,10 @@ struct Course {
 	 */
 	std::string duration;
 	/**
+	 * @brief 所属学期
+	 */
+	std::string semester;
+	/**
 	 * @brief 上课教室
 	 */
 	std::string classroom;
@@ -78,6 +82,15 @@ public:
 	 * @brief 禁止拷贝赋值，避免重复管理同一连接句柄
 	 */
 	Database& operator=(const Database&) = delete;
+
+	/**
+	 * @brief 移动构造，转移连接所有权
+	 */
+	Database(Database&& other) noexcept;
+	/**
+	 * @brief 移动赋值，转移连接所有权
+	 */
+	Database& operator=(Database&& other) noexcept;
 
 	/**
 	 * @brief 打开数据库连接
@@ -164,7 +177,25 @@ public:
 	 */
 	std::vector<Course> search_by_instructor(const std::string& instructor) const;
 	/**
-	 * @brief 查询全部课程
+	 * @brief 按教室查询课程
+	 * @param classroom 教室名称（支持模糊匹配）
+	 * @return 匹配课程列表，失败或无结果时可能为空
+	 */
+	std::vector<Course> search_by_classroom(const std::string& classroom) const;
+	/**
+	 * @brief 按上课日期查询课程
+	 * @param day 上课日期（精确匹配）
+	 * @return 匹配课程列表，失败或无结果时可能为空
+	 */
+	std::vector<Course> search_by_day(const std::string& day) const;
+	/**
+	 * @brief 查询指定学期的全部课程
+	 * @param semester 学期标识
+	 * @return 匹配课程列表，失败或无结果时可能为空
+	 */
+	std::vector<Course> view_courses_by_semester(const std::string& semester) const;
+	/**
+	 * @brief 查询全部课程（含排课信息）
 	 * @return 全部课程列表，失败时可能为空
 	 */
 	std::vector<Course> view_all_courses() const;
@@ -178,11 +209,24 @@ public:
 	bool delete_course(const std::string& code, const std::string& section) const;
 
 	/**
-	 * @brief 按 (code, section) 更新课程的 title/instructor/day/duration/classroom
-	 * @param course 包含新字段值的课程对象，code 和 section 用于定位记录
+	 * @brief 按 (code, section) 更新课程的 title/instructor；
+	 *        按 (code, section, day, duration, semester) 更新排课的 classroom
+	 * @param course 包含新字段值的课程对象，key 字段用于定位记录
 	 * @return 更新成功返回 true，否则返回 false
 	 */
 	bool update(const Course& course) const;
+	/**
+	 * @brief 删除指定排课记录（不影响课程主表）
+	 * @param code     课程代码
+	 * @param section  班级
+	 * @param day      上课日期
+	 * @param duration 课程时长
+	 * @param semester 学期
+	 * @return 删除成功返回 true，否则返回 false
+	 */
+	bool delete_schedule(const std::string& code, const std::string& section,
+						 const std::string& day, const std::string& duration,
+						 const std::string& semester) const;
 
 	/**
 	 * @brief 获取最近一次错误信息
