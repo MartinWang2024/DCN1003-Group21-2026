@@ -150,6 +150,16 @@ Response_t handle_query_semester(const ReqContext_t& /*ctx*/)
     return resp;
 }
 
+Response_t handle_view_all(const ReqContext_t& ctx)
+{
+    Response_t resp;
+    const auto courses = ctx.course_repo.view_all_courses();
+    resp.cmd_type = Protocal::CMD_QUERY_RESP;
+    resp.payload = serialize_courses(courses);
+    print_log(info, "handle_view_all: %zu results", courses.size());
+    return resp;
+}
+
 // 增加课程 (admin)
 // 协议: payload.json[0..6] = code/title/section/instructor/day/duration/classroom
 Response_t handle_add(const ReqContext_t& ctx)
@@ -277,8 +287,9 @@ void register_all_server(Dispatcher& dispatcher)
     dispatcher.register_handler(Protocal::CMD_QUERY_BY_CODE_REQ,       STUDENT, handle_query_code);
     dispatcher.register_handler(Protocal::CMD_QUERY_BY_INSTRUCTOR_REQ, STUDENT, handle_query_instructor);
     dispatcher.register_handler(Protocal::CMD_QUERY_BY_SEMESTER_REQ,   STUDENT, handle_query_semester);
+    dispatcher.register_handler(Protocal::CMD_VIEW_ALL_REQ,            STUDENT, handle_view_all);
     dispatcher.register_handler(Protocal::CMD_ADD_REQ,                 ADMIN,   handle_add);
     dispatcher.register_handler(Protocal::CMD_UPDATE_REQ,              ADMIN,   handle_update);
     dispatcher.register_handler(Protocal::CMD_DELETE_REQ,              ADMIN,   handle_delete);
-    print_log(info, "register_all_server: 8 handlers registered");
+    print_log(info, "register_all_server: 9 handlers registered");
 }

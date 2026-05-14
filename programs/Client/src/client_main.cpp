@@ -131,6 +131,14 @@ public:
         emit_resp(r);
     }
 
+    void handle_view_all() {
+        if (!require_connected()) return;
+        ClientResponse r;
+        auto e = dcn_client::client_view_all(*sock, r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
+
     void handle_add(const std::vector<std::string>& f) {
         if (!require_connected()) return;
         if (f.size() < 8) { emit_err("ADD requires 7 fields"); return; }
@@ -180,6 +188,7 @@ int run_bridge()
         else if (verb == "QUERY_CODE")        sess.handle_query_code(f);
         else if (verb == "QUERY_INSTRUCTOR")  sess.handle_query_instructor(f);
         else if (verb == "QUERY_SEMESTER")    sess.handle_query_semester(f);
+        else if (verb == "VIEW_ALL")          sess.handle_view_all();
         else if (verb == "ADD")               sess.handle_add(f);
         else if (verb == "UPDATE")            sess.handle_update(f);
         else if (verb == "DELETE")            sess.handle_delete(f);
@@ -200,6 +209,7 @@ void print_repl_help()
               << "  query_code <code>\n"
               << "  query_instructor <name>\n"
               << "  query_semester <sem>\n"
+              << "  view_all\n"
               << "  add <code> <title> <section> <instructor> <day> <duration> <classroom>\n"
               << "  update <same as add>\n"
               << "  delete <code> <section>\n"
@@ -264,6 +274,7 @@ int run_repl()
         else if (v == "query_code" && t.size() >= 2)     e = dcn_client::client_query_code(*sock, t[1], r);
         else if (v == "query_instructor" && t.size()>=2) e = dcn_client::client_query_instructor(*sock, t[1], r);
         else if (v == "query_semester" && t.size() >= 2) e = dcn_client::client_query_semester(*sock, t[1], r);
+        else if (v == "view_all")                        e = dcn_client::client_view_all(*sock, r);
         else if (v == "add" && t.size() >= 8) {
             dcn_database::Course c{t[1],t[2],t[3],t[4],t[5],t[6],t[7]};
             e = dcn_client::client_add(*sock, c, r);

@@ -88,6 +88,9 @@ Error::ErrorInfo client_query_instructor(TcpSocket::SocketHandler& sh, const std
 Error::ErrorInfo client_query_semester(TcpSocket::SocketHandler& sh, const std::string& sem, ClientResponse& out)
 { return send_and_recv(sh, {sem}, Protocal::CMD_QUERY_BY_SEMESTER_REQ, out); }
 
+Error::ErrorInfo client_view_all(TcpSocket::SocketHandler& sh, ClientResponse& out)
+{ return send_and_recv(sh, {}, Protocal::CMD_VIEW_ALL_REQ, out); }
+
 Error::ErrorInfo client_add(TcpSocket::SocketHandler& sh, const dcn_database::Course& c, ClientResponse& out)
 { return send_and_recv(sh, {c.code, c.title, c.section, c.instructor, c.day, c.duration, c.classroom}, Protocal::CMD_ADD_REQ, out); }
 
