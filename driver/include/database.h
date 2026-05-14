@@ -122,7 +122,7 @@ public:
 	/**
 	 * @brief 默认构造函数
 	 */
-	CourseRepository() = default;
+	CourseRepository();
 	/**
 	 * @brief 构造并尝试打开指定数据库
 	 * @param db_path 数据库文件路径
@@ -215,7 +215,7 @@ public:
 	/**
 	 * @brief 默认构造函数
 	 */
-	AdministratorRepository() = default;
+	AdministratorRepository();
 	/**
 	 * @brief 构造并尝试打开指定数据库
 	 * @param db_path 数据库文件路径
