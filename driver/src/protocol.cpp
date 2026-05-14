@@ -3,18 +3,15 @@
 #include "log.h"
 #include <atomic>
 
+namespace {
 
-
-Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_char* msg, size_t msg_len, uint32_t cmd_type)
+Error::ErrorInfo send_body(TcpSocket::SocketHandler& sh, MsgBody& body)
 {
     Error::ErrorInfo err;
 
     unsigned char zero_buffer[32] = {0};
-
-    // 检查有没有把 key load 进内存
     if (memcmp(openssl::key, zero_buffer, sizeof(openssl::key)) == 0) {
-        if (openssl::readAppKey(openssl::key, "app.key").e != 0)
-        {
+        if (openssl::readAppKey(openssl::key, "app.key").e != 0) {
             err.e = Error::READ_ERR;
             err.message = "retry load key to memory failed.";
             print_log(err, debug);
@@ -22,49 +19,29 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_ch
         }
     }
 
-    MsgHeader_t header;
+    Protocal::MsgHeader_t header;
     header.version = std::stoi(APP_VERSION);
-
-    // 填充body
-    MsgBody body;
-    body.set_cmd_type(cmd_type);
     body.set_timestamp(get_now_time());
-    // 单调自增的请求号，避免硬编码字面量并保证包间唯一
-    body.set_req_id(detail::g_req_id_counter.fetch_add(1, std::memory_order_relaxed));
+    body.set_req_id(Protocal::detail::g_req_id_counter.fetch_add(1, std::memory_order_relaxed));
 
-    // 填充payload（按真实长度构造，避免 msg 中含 \0 时被截断）
-    Payload* payload_ptr = body.mutable_payload();
-    std::string msg_str(reinterpret_cast<const char*>(msg), msg_len);
-    payload_ptr->add_json(msg_str);
-
-    // 序列化 MsgBody
     std::string body_serialized_data;
     body.SerializeToString(&body_serialized_data);
 
-    // 计算消息 mac 值
     size_t mac_size;
     openssl::compute_hmac(
-        openssl::key,
-        sizeof(openssl::key),
-        // 对序列化后的body计算mac校验值
+        openssl::key, sizeof(openssl::key),
         reinterpret_cast<const unsigned char*>(body_serialized_data.data()),
         body_serialized_data.length(),
-        header.mac,
-        &mac_size);
-
-    // 预期将生成32byte大小的mac值
-    if (mac_size != sizeof(openssl::key))
-    {
+        header.mac, &mac_size);
+    if (mac_size != sizeof(openssl::key)) {
         err.e = Error::MAC_CALC_ERR;
         err.message = "mac calc failed.";
         print_log(err, debug);
         return err;
     }
 
-    // 计算AES初始向量
     u_char iv[16] = {0};
-    if (!openssl::iv_gen(iv, sizeof(iv)))
-    {
+    if (!openssl::iv_gen(iv, sizeof(iv))) {
         err.e = Error::IV_CALC_ERR;
         err.message = "generated iv failed.";
         print_log(err, debug);
@@ -72,42 +49,48 @@ Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_ch
     }
     memcpy(header.iv, iv, sizeof(header.iv));
 
-    // 加密序列化后的 body，
-    std::vector<u_char> ciphertext = openssl::aes_encrypt(
-        body_serialized_data,
-        openssl::key,
-        iv);
-    if (ciphertext.empty())
-    {
+    std::vector<u_char> ciphertext = openssl::aes_encrypt(body_serialized_data, openssl::key, iv);
+    if (ciphertext.empty()) {
         err.e = Error::ENCRYPT_ERR;
         err.message = "aes encrypt failed.";
         print_log(err, debug);
         return err;
     }
-
-    // 获取加密后信息长度
     header.body_len = ciphertext.size();
 
-    // 分步发送 header 与 body，任一失败即返回（原 `&&` 短路写法会漏判单边失败）
-    Error::ErrorInfo header_err = sh.socket_send(&header, sizeof(header));
-    if (header_err.e != Error::SUCCESS)
-    {
+    if (sh.socket_send(&header, sizeof(header)).e != Error::SUCCESS) {
         err.e = Error::SEND_ERR;
         err.message = "Package_send: send header failed.";
         print_log(err, debug);
         return err;
     }
-
-    Error::ErrorInfo body_err = sh.socket_send(ciphertext.data(), ciphertext.size());
-    if (body_err.e != Error::SUCCESS)
-    {
+    if (sh.socket_send(ciphertext.data(), ciphertext.size()).e != Error::SUCCESS) {
         err.e = Error::SEND_ERR;
         err.message = "Package_send: send body failed.";
         print_log(err, debug);
         return err;
     }
-
     return err;
+}
+
+}  // namespace
+
+Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const u_char* msg, size_t msg_len, uint32_t cmd_type)
+{
+    MsgBody body;
+    body.set_cmd_type(cmd_type);
+    Payload* payload_ptr = body.mutable_payload();
+    payload_ptr->add_json(std::string(reinterpret_cast<const char*>(msg), msg_len));
+    return send_body(sh, body);
+}
+
+Error::ErrorInfo Protocal::Package_send(TcpSocket::SocketHandler &sh, const std::vector<std::string>& fields, uint32_t cmd_type)
+{
+    MsgBody body;
+    body.set_cmd_type(cmd_type);
+    Payload* payload_ptr = body.mutable_payload();
+    for (const auto& f : fields) payload_ptr->add_json(f);
+    return send_body(sh, body);
 }
 
 Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google::protobuf::Message& msg)

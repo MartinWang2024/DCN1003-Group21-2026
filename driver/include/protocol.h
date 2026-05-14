@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <ws2tcpip.h>
 #include "message.pb.h"
 #include "openssl.h"
@@ -34,6 +35,7 @@ namespace Protocal {
 
 
     Error::ErrorInfo Package_send(TcpSocket::SocketHandler &sh, const unsigned char* msg, size_t msg_len, uint32_t cmd_type);
+    Error::ErrorInfo Package_send(TcpSocket::SocketHandler &sh, const std::vector<std::string>& fields, uint32_t cmd_type);
     Error::ErrorInfo Package_receive(TcpSocket::SocketHandler &sh, google::protobuf::Message& msg);
 }
 
