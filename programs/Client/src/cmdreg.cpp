@@ -32,8 +32,8 @@ std::vector<dcn_database::Course> parse_courses(const std::string& payload)
     auto records = split(payload, RECORD_SEP);
     for (size_t i = 1; i < records.size(); ++i) {
         auto f = split(records[i], FIELD_SEP);
-        if (f.size() < 7) continue;
-        result.push_back({f[0], f[1], f[2], f[3], f[4], f[5], f[6]});
+        if (f.size() < 8) continue;
+        result.push_back({f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7]});
     }
     return result;
 }
@@ -95,10 +95,10 @@ Error::ErrorInfo client_view_all_page(TcpSocket::SocketHandler& sh, int offset, 
 { return send_and_recv(sh, {std::to_string(offset), std::to_string(limit)}, Protocal::CMD_VIEW_ALL_PAGE_REQ, out); }
 
 Error::ErrorInfo client_add(TcpSocket::SocketHandler& sh, const dcn_database::Course& c, ClientResponse& out)
-{ return send_and_recv(sh, {c.code, c.title, c.section, c.instructor, c.day, c.duration, c.classroom}, Protocal::CMD_ADD_REQ, out); }
+{ return send_and_recv(sh, {c.code, c.title, c.section, c.instructor, c.day, c.duration, c.semester, c.classroom}, Protocal::CMD_ADD_REQ, out); }
 
 Error::ErrorInfo client_update(TcpSocket::SocketHandler& sh, const dcn_database::Course& c, ClientResponse& out)
-{ return send_and_recv(sh, {c.code, c.title, c.section, c.instructor, c.day, c.duration, c.classroom}, Protocal::CMD_UPDATE_REQ, out); }
+{ return send_and_recv(sh, {c.code, c.title, c.section, c.instructor, c.day, c.duration, c.semester, c.classroom}, Protocal::CMD_UPDATE_REQ, out); }
 
 Error::ErrorInfo client_delete(TcpSocket::SocketHandler& sh, const std::string& code, const std::string& section, ClientResponse& out)
 { return send_and_recv(sh, {code, section}, Protocal::CMD_DELETE_REQ, out); }

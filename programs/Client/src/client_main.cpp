@@ -38,7 +38,7 @@ std::string join_courses_tsv(const std::vector<dcn_database::Course>& cs)
     for (const auto& c : cs) {
         os << TAB << c.code << TAB << c.title << TAB << c.section
            << TAB << c.instructor << TAB << c.day << TAB << c.duration
-           << TAB << c.classroom;
+           << TAB << c.semester << TAB << c.classroom;
     }
     return os.str();
 }
@@ -152,8 +152,8 @@ public:
 
     void handle_add(const std::vector<std::string>& f) {
         if (!require_connected()) return;
-        if (f.size() < 8) { emit_err("ADD requires 7 fields"); return; }
-        dcn_database::Course c{f[1], f[2], f[3], f[4], f[5], f[6], f[7]};
+        if (f.size() < 9) { emit_err("ADD requires 8 fields"); return; }
+        dcn_database::Course c{f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8]};
         ClientResponse r;
         auto e = dcn_client::client_add(*sock, c, r);
         if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
@@ -162,8 +162,8 @@ public:
 
     void handle_update(const std::vector<std::string>& f) {
         if (!require_connected()) return;
-        if (f.size() < 8) { emit_err("UPDATE requires 7 fields"); return; }
-        dcn_database::Course c{f[1], f[2], f[3], f[4], f[5], f[6], f[7]};
+        if (f.size() < 9) { emit_err("UPDATE requires 8 fields"); return; }
+        dcn_database::Course c{f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8]};
         ClientResponse r;
         auto e = dcn_client::client_update(*sock, c, r);
         if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
@@ -222,7 +222,7 @@ void print_repl_help()
               << "  query_instructor <name>\n"
               << "  query_semester <sem>\n"
               << "  view_all\n"
-              << "  add <code> <title> <section> <instructor> <day> <duration> <classroom>\n"
+              << "  add <code> <title> <section> <instructor> <day> <duration> <semester> <classroom>\n"
               << "  update <same as add>\n"
               << "  delete <code> <section>\n"
               << "  help / quit\n";
@@ -247,7 +247,8 @@ void print_resp(const ClientResponse& r)
             std::cout << "    " << c.code << " " << c.title
                       << " (sec=" << c.section << ") "
                       << c.instructor << " " << c.day
-                      << " " << c.duration << "min @ " << c.classroom << "\n";
+                      << " " << c.duration << "min "
+                      << "[" << c.semester << "] @ " << c.classroom << "\n";
         }
     } else {
         std::cout << "  [OK] " << r.text << "\n";
@@ -287,12 +288,12 @@ int run_repl()
         else if (v == "query_instructor" && t.size()>=2) e = dcn_client::client_query_instructor(*sock, t[1], r);
         else if (v == "query_semester" && t.size() >= 2) e = dcn_client::client_query_semester(*sock, t[1], r);
         else if (v == "view_all")                        e = dcn_client::client_view_all(*sock, r);
-        else if (v == "add" && t.size() >= 8) {
-            dcn_database::Course c{t[1],t[2],t[3],t[4],t[5],t[6],t[7]};
+        else if (v == "add" && t.size() >= 9) {
+            dcn_database::Course c{t[1],t[2],t[3],t[4],t[5],t[6],t[7],t[8]};
             e = dcn_client::client_add(*sock, c, r);
         }
-        else if (v == "update" && t.size() >= 8) {
-            dcn_database::Course c{t[1],t[2],t[3],t[4],t[5],t[6],t[7]};
+        else if (v == "update" && t.size() >= 9) {
+            dcn_database::Course c{t[1],t[2],t[3],t[4],t[5],t[6],t[7],t[8]};
             e = dcn_client::client_update(*sock, c, r);
         }
         else if (v == "delete" && t.size() >= 3)         e = dcn_client::client_delete(*sock, t[1], t[2], r);
