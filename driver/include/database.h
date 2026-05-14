@@ -201,6 +201,20 @@ public:
 	std::vector<Course> view_all_courses() const;
 
 	/**
+	 * @brief 分页查询全部课程
+	 * @param offset 起始偏移（0 起算）
+	 * @param limit  最大返回行数
+	 * @return 当前页课程列表，失败时可能为空
+	 */
+	std::vector<Course> view_all_courses_paged(int offset, int limit) const;
+
+	/**
+	 * @brief 统计课程总数
+	 * @return 课程总数；失败时返回 -1
+	 */
+	int count_courses() const;
+
+	/**
 	 * @brief 按课程代码和班级删除课程记录
 	 * @param code 课程代码
 	 * @param section 班级

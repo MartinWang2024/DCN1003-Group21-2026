@@ -14,6 +14,8 @@ namespace Protocal
         CMD_QUERY_BY_CODE_REQ       = C2S | 0x0101,   // 协议请求: 课程编码查询
         CMD_QUERY_BY_INSTRUCTOR_REQ = C2S | 0x0102,   // 协议请求: 导师姓名查询
         CMD_QUERY_BY_SEMESTER_REQ   = C2S | 0x0103,   // 协议请求: 学期编号查询
+        CMD_VIEW_ALL_REQ            = C2S | 0x0104,   // 协议请求: 查询全部课程
+        CMD_VIEW_ALL_PAGE_REQ       = C2S | 0x0105,   // 协议请求: 分页查询全部课程
         CMD_QUERY_RESP              = S2C | 0x0180,   // 协议响应: 查询
         // 管理类（需 admin 权限）
         CMD_ADD_REQ                 = C2S | 0x0201,   // 协议请求: 增加
