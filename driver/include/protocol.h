@@ -8,13 +8,6 @@
 #include "SocketHandler.h"
 #include "cmd_type.h"
 
-// TODO 接收解码
-// TODO 测试发包收包代码正常工作
-// TODO 划定指令数量及内容
-// TODO 登录逻辑
-// TODO 课程查询逻辑
-
-
 static constexpr uint32_t MAX_BODY = 16 * 1024 * 1024;
 
 namespace Protocal {
