@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/flutter_client" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/openssl/libopenssl" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/protobuf/library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/protobuf/library/third_party/benchmark" vcs="Git" />

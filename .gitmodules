@@ -4,3 +4,6 @@
 [submodule "third_party/openssl/libopenssl"]
 	path = third_party/openssl/libopenssl
 	url = https://github.com/Rinsutoringu/libopenssl
+[submodule "dcn_flutter_client"]
+	path = dcn_flutter_client
+	url = https://github.com/Rinsutoringu/dcn_flutter_client.git
