@@ -73,6 +73,12 @@ int main()
         std::cerr << "Failed to open/init admins DB: " << admins.last_error() << std::endl;
         return 1;
     }
+    // 首次启动注入默认管理员, 否则任何客户端都登不上
+    if (!admins.verify_login("admin", "admin123"))
+    {
+        admins.insert_or_replace({"admin", "admin123"});
+        print_log(info, "Default admin account injected: admin/admin123");
+    }
 
     Dispatcher dispatcher;
     register_all_server(dispatcher);
