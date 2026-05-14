@@ -8,6 +8,7 @@ Response_t handle_query_code(const ReqContext_t& ctx);
 Response_t handle_query_instructor(const ReqContext_t& ctx);
 Response_t handle_query_semester(const ReqContext_t& ctx);
 Response_t handle_view_all(const ReqContext_t& ctx);
+Response_t handle_view_all_page(const ReqContext_t& ctx);
 Response_t handle_add(const ReqContext_t& ctx);
 Response_t handle_update(const ReqContext_t& ctx);
 Response_t handle_delete(const ReqContext_t& ctx);
