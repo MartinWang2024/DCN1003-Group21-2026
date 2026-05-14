@@ -26,6 +26,7 @@ std::string serialize_courses(const std::vector<dcn_database::Course>& courses)
            << c.instructor << FIELD_SEP
            << c.day        << FIELD_SEP
            << c.duration   << FIELD_SEP
+           << c.semester   << FIELD_SEP
            << c.classroom;
     }
     return os.str();
@@ -141,12 +142,21 @@ Response_t handle_query_instructor(const ReqContext_t& ctx)
 // 按学期查询
 // FIXME: 当前 Course schema 无 semester 字段, CourseRepository 无对应接口
 // 暂返回错误, 待数据库扩展后补齐
-Response_t handle_query_semester(const ReqContext_t& /*ctx*/)
+Response_t handle_query_semester(const ReqContext_t& ctx)
 {
     Response_t resp;
-    print_log(warn, "handle_query_semester: not supported (schema missing semester column)");
-    resp.cmd_type = Protocal::CMD_ERROR;
-    resp.payload = "Query by semester not supported in current schema";
+    const std::string semester = field_at(ctx.body.payload(), 0);
+    if (semester.empty())
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Semester required";
+        return resp;
+    }
+    const auto courses = ctx.course_repo.view_courses_by_semester(semester);
+    resp.cmd_type = Protocal::CMD_QUERY_RESP;
+    resp.payload = serialize_courses(courses);
+    print_log(info, "handle_query_semester: semester='%s', %zu results",
+              semester.c_str(), courses.size());
     return resp;
 }
 
@@ -179,21 +189,21 @@ Response_t handle_view_all_page(const ReqContext_t& ctx)
 }
 
 // 增加课程 (admin)
-// 协议: payload.json[0..6] = code/title/section/instructor/day/duration/classroom
+// 协议: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom
 Response_t handle_add(const ReqContext_t& ctx)
 {
     Response_t resp;
     const auto& p = ctx.body.payload();
-    if (p.json_size() < 7)
+    if (p.json_size() < 8)
     {
         resp.cmd_type = Protocal::CMD_ERROR;
-        resp.payload = "Add requires 7 fields (code/title/section/instructor/day/duration/classroom)";
+        resp.payload = "Add requires 8 fields (code/title/section/instructor/day/duration/semester/classroom)";
         return resp;
     }
 
     dcn_database::Course course{
         p.json(0), p.json(1), p.json(2), p.json(3),
-        p.json(4), p.json(5), p.json(6)
+        p.json(4), p.json(5), p.json(6), p.json(7)
     };
 
     if (course.code.empty() || course.section.empty())
@@ -220,22 +230,22 @@ Response_t handle_add(const ReqContext_t& ctx)
 }
 
 // 更新课程 (admin)
-// 协议: payload.json[0..6] = code/title/section/instructor/day/duration/classroom
-// (code, section) 用于定位记录, 其余字段为新值
+// 协议: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom
+// (code, section) 用于定位课程；(code,section,day,duration,semester) 用于定位排课
 Response_t handle_update(const ReqContext_t& ctx)
 {
     Response_t resp;
     const auto& p = ctx.body.payload();
-    if (p.json_size() < 7)
+    if (p.json_size() < 8)
     {
         resp.cmd_type = Protocal::CMD_ERROR;
-        resp.payload = "Update requires 7 fields";
+        resp.payload = "Update requires 8 fields";
         return resp;
     }
 
     dcn_database::Course course{
         p.json(0), p.json(1), p.json(2), p.json(3),
-        p.json(4), p.json(5), p.json(6)
+        p.json(4), p.json(5), p.json(6), p.json(7)
     };
 
     if (course.code.empty() || course.section.empty())
