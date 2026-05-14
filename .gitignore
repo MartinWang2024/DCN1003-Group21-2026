@@ -3,3 +3,5 @@
 # 编译产物
 build/
 cmake-build-debug/
+
+key/app.key

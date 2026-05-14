@@ -2,6 +2,9 @@
 
 #include "sqlite3.h"
 
+#include <filesystem>
+#include <system_error>
+
 namespace dcn_database {
 
 namespace {
@@ -43,6 +46,19 @@ Database& Database::operator=(Database&& other) noexcept {
 
 bool Database::open(const std::string& db_path) {
 	close();
+	// create parent directories if needed (but skip for in-memory and URI paths)
+	if (!db_path.empty() && db_path != ":memory:" && db_path.rfind("file:", 0) != 0) {
+		std::error_code ec;
+		const std::filesystem::path parent = std::filesystem::path(db_path).parent_path();
+		if (!parent.empty() && !std::filesystem::exists(parent, ec)) {
+			std::filesystem::create_directories(parent, ec);
+			if (ec) {
+				set_error("Failed to create database directory '" + parent.string() + "': " + ec.message());
+				return false;
+			}
+		}
+	}
+
 	const int rc = sqlite3_open_v2(
 		db_path.c_str(),
 		&db_,
