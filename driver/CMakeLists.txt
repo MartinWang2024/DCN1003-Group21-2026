@@ -4,6 +4,7 @@ add_library(dcn_driver STATIC
     src/SocketHandler.cpp
     src/log.cpp
     src/CmdHandler.cpp
+    src/winsock_guard.cpp
 )
 
 target_include_directories(dcn_driver
