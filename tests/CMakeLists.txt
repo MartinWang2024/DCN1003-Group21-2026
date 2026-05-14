@@ -117,3 +117,15 @@ add_custom_command(TARGET test_cmdreg POST_BUILD
 
 add_test(NAME test_cmdreg COMMAND test_cmdreg)
 
+add_executable(test_socket_handler
+        test_socket_handler.cpp
+)
+target_link_libraries(test_socket_handler
+    PRIVATE
+        dcn_driver
+)
+if (WIN32)
+    target_link_libraries(test_socket_handler PRIVATE Ws2_32)
+endif ()
+add_test(NAME test_socket_handler COMMAND test_socket_handler)
+
