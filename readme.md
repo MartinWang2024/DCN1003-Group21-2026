@@ -94,6 +94,8 @@ we need to generate a 32-bit key and put into `DCN1003-Group21-2026/key` folder.
 use this command to generate key
 
 ```bash
+mkdir key
+cd key
 openssl rand -out app.key 32
 ```
 
