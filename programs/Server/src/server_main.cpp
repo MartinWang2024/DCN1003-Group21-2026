@@ -7,11 +7,44 @@
 #include "winsock_guard.h"
 
 #include <ws2tcpip.h>
+#include <atomic>
+#include <csignal>
 #include <iostream>
 #include <thread>
 #include <utility>
 
 using namespace Protocal::Dispatch;
+
+namespace {
+std::atomic<SOCKET> g_listen_sock{INVALID_SOCKET};
+std::atomic<bool>   g_running{true};
+
+void request_shutdown() {
+    g_running = false;
+    SOCKET s = g_listen_sock.exchange(INVALID_SOCKET);
+    if (s != INVALID_SOCKET) {
+        // 关闭监听 socket 让阻塞中的 accept() 立刻返回，触发主循环退出
+        closesocket(s);
+    }
+}
+
+BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
+    switch (ctrl_type) {
+        case CTRL_C_EVENT:
+        case CTRL_BREAK_EVENT:
+        case CTRL_CLOSE_EVENT:
+        case CTRL_LOGOFF_EVENT:
+        case CTRL_SHUTDOWN_EVENT:
+            print_log(info, "[*] shutdown signal received, draining...");
+            request_shutdown();
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+void signal_handler(int) { request_shutdown(); }
+}
 
 void handle_client(TcpSocket::SocketHandler sh,
                    dcn_database::CourseRepository& courses,
@@ -85,8 +118,13 @@ int main()
 
     SOCKET listen_sock = create_listener(PORT, BACKLOG);
     if (listen_sock == INVALID_SOCKET) return 1;
+    g_listen_sock = listen_sock;
 
-    while (true)
+    SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
+    std::signal(SIGINT,  signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
+    while (g_running)
     {
         sockaddr_in client_addr{};
         int addr_len = sizeof(client_addr);
@@ -95,6 +133,7 @@ int main()
                                     &addr_len);
         if (client_sock == INVALID_SOCKET)
         {
+            if (!g_running) break;
             std::cerr << "accept() failed: " << WSAGetLastError() << std::endl;
             continue;
         }
@@ -110,6 +149,11 @@ int main()
                     std::ref(dispatcher)).detach();
     }
 
-    closesocket(listen_sock);
+    print_log(info, "[*] server shutting down, flushing DB...");
+    SOCKET s = g_listen_sock.exchange(INVALID_SOCKET);
+    if (s != INVALID_SOCKET) closesocket(s);
+    courses.close();
+    admins.close();
+    print_log(info, "[*] server stopped cleanly");
     return 0;
 }

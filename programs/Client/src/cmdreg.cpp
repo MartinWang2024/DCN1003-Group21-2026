@@ -58,6 +58,12 @@ Error::ErrorInfo send_and_recv(
     if (out.cmd_type == Protocal::CMD_QUERY_RESP) {
         out.courses = parse_courses(out.text);
     }
+    else if (out.cmd_type == Protocal::CMD_ADMIN_LIST_RESP) {
+        auto records = split(out.text, RECORD_SEP);
+        for (size_t i = 1; i < records.size(); ++i) {
+            if (!records[i].empty()) out.admins.push_back(records[i]);
+        }
+    }
     return err;
 }
 
@@ -71,6 +77,10 @@ bool ClientResponse::is_error() const {
 
 bool ClientResponse::is_data() const {
     return cmd_type == Protocal::CMD_QUERY_RESP;
+}
+
+bool ClientResponse::is_admin_list() const {
+    return cmd_type == Protocal::CMD_ADMIN_LIST_RESP;
 }
 
 Error::ErrorInfo client_login(TcpSocket::SocketHandler& sh, const std::string& user, const std::string& pass, ClientResponse& out)
@@ -102,5 +112,17 @@ Error::ErrorInfo client_update(TcpSocket::SocketHandler& sh, const dcn_database:
 
 Error::ErrorInfo client_delete(TcpSocket::SocketHandler& sh, const std::string& code, const std::string& section, ClientResponse& out)
 { return send_and_recv(sh, {code, section}, Protocal::CMD_DELETE_REQ, out); }
+
+Error::ErrorInfo client_admin_list(TcpSocket::SocketHandler& sh, ClientResponse& out)
+{ return send_and_recv(sh, {}, Protocal::CMD_ADMIN_LIST_REQ, out); }
+
+Error::ErrorInfo client_admin_create(TcpSocket::SocketHandler& sh, const std::string& user, const std::string& pass, ClientResponse& out)
+{ return send_and_recv(sh, {user, pass}, Protocal::CMD_ADMIN_CREATE_REQ, out); }
+
+Error::ErrorInfo client_admin_update(TcpSocket::SocketHandler& sh, const std::string& old_user, const std::string& new_user, const std::string& new_pass, ClientResponse& out)
+{ return send_and_recv(sh, {old_user, new_user, new_pass}, Protocal::CMD_ADMIN_UPDATE_REQ, out); }
+
+Error::ErrorInfo client_admin_delete(TcpSocket::SocketHandler& sh, const std::string& user, ClientResponse& out)
+{ return send_and_recv(sh, {user}, Protocal::CMD_ADMIN_DELETE_REQ, out); }
 
 }

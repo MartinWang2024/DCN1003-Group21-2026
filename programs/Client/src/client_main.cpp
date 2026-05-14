@@ -60,10 +60,17 @@ public:
         std::cout << "DATA\t" << join_courses_tsv(cs) << "\n";
         std::cout.flush();
     }
+    void emit_admins(const std::vector<std::string>& names) {
+        std::cout << "ADMINS\t" << names.size();
+        for (const auto& n : names) std::cout << TAB << n;
+        std::cout << "\n";
+        std::cout.flush();
+    }
 
     void emit_resp(const ClientResponse& r) {
         if (r.is_error()) emit_err(r.text);
         else if (r.is_data()) emit_data(r.courses);
+        else if (r.is_admin_list()) emit_admins(r.admins);
         else emit_ok(r.text);
     }
 
@@ -178,6 +185,41 @@ public:
         if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
         emit_resp(r);
     }
+
+    void handle_admin_list() {
+        if (!require_connected()) return;
+        ClientResponse r;
+        auto e = dcn_client::client_admin_list(*sock, r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
+
+    void handle_admin_create(const std::vector<std::string>& f) {
+        if (!require_connected()) return;
+        if (f.size() < 3) { emit_err("ADMIN_CREATE requires <user> <pass>"); return; }
+        ClientResponse r;
+        auto e = dcn_client::client_admin_create(*sock, f[1], f[2], r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
+
+    void handle_admin_update(const std::vector<std::string>& f) {
+        if (!require_connected()) return;
+        if (f.size() < 4) { emit_err("ADMIN_UPDATE requires <old_user> <new_user> <new_pass>"); return; }
+        ClientResponse r;
+        auto e = dcn_client::client_admin_update(*sock, f[1], f[2], f[3], r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
+
+    void handle_admin_delete(const std::vector<std::string>& f) {
+        if (!require_connected()) return;
+        if (f.size() < 2) { emit_err("ADMIN_DELETE requires <user>"); return; }
+        ClientResponse r;
+        auto e = dcn_client::client_admin_delete(*sock, f[1], r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
 };
 
 int run_bridge()
@@ -204,6 +246,10 @@ int run_bridge()
         else if (verb == "ADD")               sess.handle_add(f);
         else if (verb == "UPDATE")            sess.handle_update(f);
         else if (verb == "DELETE")            sess.handle_delete(f);
+        else if (verb == "ADMIN_LIST")        sess.handle_admin_list();
+        else if (verb == "ADMIN_CREATE")      sess.handle_admin_create(f);
+        else if (verb == "ADMIN_UPDATE")      sess.handle_admin_update(f);
+        else if (verb == "ADMIN_DELETE")      sess.handle_admin_delete(f);
         else if (verb == "QUIT")              break;
         else                                  sess.emit_err("unknown verb: " + verb);
     }

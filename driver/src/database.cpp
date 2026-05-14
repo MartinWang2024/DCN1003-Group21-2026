@@ -107,6 +107,9 @@ void Database::close() {
 		return;
 	}
 
+	// 强制把 -wal 文件内容合并回主 .db 并清空 wal，避免进程异常退出后主文件看似未更新
+	sqlite3_wal_checkpoint_v2(db_, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+
 	sqlite3_close(db_);
 	db_ = nullptr;
 }

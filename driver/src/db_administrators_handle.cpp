@@ -158,4 +158,90 @@ bool AdministratorRepository::verify_login(const std::string& username,
 	return false;
 }
 
+std::vector<std::string> AdministratorRepository::list_usernames() const {
+	std::vector<std::string> out;
+	sqlite3* db = db_.raw_handle();
+	if (db == nullptr) {
+		db_.set_error("Database is not open.");
+		return out;
+	}
+	const char* sql = "SELECT username FROM administrators ORDER BY username;";
+	sqlite3_stmt* stmt = nullptr;
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+		db_.set_error(sqlite3_errmsg(db));
+		return out;
+	}
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		const unsigned char* p = sqlite3_column_text(stmt, 0);
+		if (p != nullptr) out.emplace_back(reinterpret_cast<const char*>(p));
+	}
+	sqlite3_finalize(stmt);
+	return out;
+}
+
+bool AdministratorRepository::exists(const std::string& username) const {
+	sqlite3* db = db_.raw_handle();
+	if (db == nullptr) return false;
+	const char* sql = "SELECT 1 FROM administrators WHERE username = ? LIMIT 1;";
+	sqlite3_stmt* stmt = nullptr;
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+	sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+	bool found = sqlite3_step(stmt) == SQLITE_ROW;
+	sqlite3_finalize(stmt);
+	return found;
+}
+
+bool AdministratorRepository::rename(const std::string& old_username,
+									 const std::string& new_username) const {
+	sqlite3* db = db_.raw_handle();
+	if (db == nullptr) {
+		db_.set_error("Database is not open.");
+		return false;
+	}
+	if (old_username == new_username) return true;
+	if (!exists(old_username)) {
+		db_.set_error("Old username not found.");
+		return false;
+	}
+	if (exists(new_username)) {
+		db_.set_error("New username already taken.");
+		return false;
+	}
+	const char* sql = "UPDATE administrators SET username = ? WHERE username = ?;";
+	sqlite3_stmt* stmt = nullptr;
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+		db_.set_error(sqlite3_errmsg(db));
+		return false;
+	}
+	sqlite3_bind_text(stmt, 1, new_username.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 2, old_username.c_str(), -1, SQLITE_TRANSIENT);
+	int rc = sqlite3_step(stmt);
+	sqlite3_finalize(stmt);
+	return rc == SQLITE_DONE;
+}
+
+bool AdministratorRepository::remove(const std::string& username) const {
+	sqlite3* db = db_.raw_handle();
+	if (db == nullptr) {
+		db_.set_error("Database is not open.");
+		return false;
+	}
+	const char* sql = "DELETE FROM administrators WHERE username = ?;";
+	sqlite3_stmt* stmt = nullptr;
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+		db_.set_error(sqlite3_errmsg(db));
+		return false;
+	}
+	sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+	int rc = sqlite3_step(stmt);
+	int changes = sqlite3_changes(db);
+	sqlite3_finalize(stmt);
+	if (rc != SQLITE_DONE) return false;
+	if (changes == 0) {
+		db_.set_error("Username not found.");
+		return false;
+	}
+	return true;
+}
+
 }  // namespace dcn_database

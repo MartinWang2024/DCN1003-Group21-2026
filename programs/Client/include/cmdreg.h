@@ -12,8 +12,10 @@ struct ClientResponse {
     uint32_t cmd_type = 0;
     std::string text;
     std::vector<dcn_database::Course> courses;
+    std::vector<std::string> admins;
     bool is_error() const;
     bool is_data() const;
+    bool is_admin_list() const;
 };
 
 Error::ErrorInfo client_login(TcpSocket::SocketHandler& sh, const std::string& user, const std::string& pass, ClientResponse& out);
@@ -26,5 +28,10 @@ Error::ErrorInfo client_view_all_page(TcpSocket::SocketHandler& sh, int offset, 
 Error::ErrorInfo client_add(TcpSocket::SocketHandler& sh, const dcn_database::Course& c, ClientResponse& out);
 Error::ErrorInfo client_update(TcpSocket::SocketHandler& sh, const dcn_database::Course& c, ClientResponse& out);
 Error::ErrorInfo client_delete(TcpSocket::SocketHandler& sh, const std::string& code, const std::string& section, ClientResponse& out);
+
+Error::ErrorInfo client_admin_list(TcpSocket::SocketHandler& sh, ClientResponse& out);
+Error::ErrorInfo client_admin_create(TcpSocket::SocketHandler& sh, const std::string& user, const std::string& pass, ClientResponse& out);
+Error::ErrorInfo client_admin_update(TcpSocket::SocketHandler& sh, const std::string& old_user, const std::string& new_user, const std::string& new_pass, ClientResponse& out);
+Error::ErrorInfo client_admin_delete(TcpSocket::SocketHandler& sh, const std::string& user, ClientResponse& out);
 
 }

@@ -308,6 +308,144 @@ Response_t handle_delete(const ReqContext_t& ctx)
     return resp;
 }
 
+// 列出全部管理员账号
+// 响应 payload: <count><RS><name1><RS><name2>...
+Response_t handle_admin_list(const ReqContext_t& ctx)
+{
+    Response_t resp;
+    const auto names = ctx.admin_repo.list_usernames();
+    std::ostringstream os;
+    os << names.size();
+    for (const auto& n : names) os << RECORD_SEP << n;
+    resp.cmd_type = Protocal::CMD_ADMIN_LIST_RESP;
+    resp.payload = os.str();
+    print_log(info, "handle_admin_list: %zu admins", names.size());
+    return resp;
+}
+
+// 创建管理员
+// 协议: payload.json[0]=username, payload.json[1]=password
+Response_t handle_admin_create(const ReqContext_t& ctx)
+{
+    Response_t resp;
+    const auto& p = ctx.body.payload();
+    if (p.json_size() < 2)
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Admin create requires username and password";
+        return resp;
+    }
+    const std::string username = p.json(0);
+    const std::string password = p.json(1);
+    if (username.empty() || password.empty())
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Username or password cannot be empty";
+        return resp;
+    }
+    if (ctx.admin_repo.exists(username))
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Username already exists";
+        return resp;
+    }
+    if (!ctx.admin_repo.insert_or_replace({username, password}))
+    {
+        resp.cmd_type = Protocal::CMD_SERVER_ERROR;
+        resp.payload = "Create admin failed: " + ctx.admin_repo.last_error();
+        return resp;
+    }
+    print_log(info, "handle_admin_create: '%s' created by '%s'",
+              username.c_str(), ctx.session.name.c_str());
+    resp.cmd_type = Protocal::CMD_ADMIN_RESP;
+    resp.payload = "OK";
+    return resp;
+}
+
+// 修改管理员: 用户名/密码可任改其一或同改
+// 协议: payload.json[0]=old_username, payload.json[1]=new_username,
+//      payload.json[2]=new_password (空字符串表示不改密码)
+Response_t handle_admin_update(const ReqContext_t& ctx)
+{
+    Response_t resp;
+    const auto& p = ctx.body.payload();
+    if (p.json_size() < 3)
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Admin update requires old_username, new_username, new_password";
+        return resp;
+    }
+    const std::string old_name = p.json(0);
+    const std::string new_name = p.json(1);
+    const std::string new_pass = p.json(2);
+    if (old_name.empty() || new_name.empty())
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Old/new username cannot be empty";
+        return resp;
+    }
+    if (!ctx.admin_repo.exists(old_name))
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Old username not found";
+        return resp;
+    }
+    if (old_name != new_name && !ctx.admin_repo.rename(old_name, new_name))
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Rename failed: " + ctx.admin_repo.last_error();
+        return resp;
+    }
+    if (!new_pass.empty())
+    {
+        if (!ctx.admin_repo.insert_or_replace({new_name, new_pass}))
+        {
+            resp.cmd_type = Protocal::CMD_SERVER_ERROR;
+            resp.payload = "Password update failed: " + ctx.admin_repo.last_error();
+            return resp;
+        }
+    }
+    // 自身改名后同步 session.name, 避免后续 self-protection 误判
+    if (ctx.session.name == old_name) ctx.session.name = new_name;
+    print_log(info, "handle_admin_update: '%s' -> '%s' (pass_changed=%d) by '%s'",
+              old_name.c_str(), new_name.c_str(),
+              new_pass.empty() ? 0 : 1, ctx.session.name.c_str());
+    resp.cmd_type = Protocal::CMD_ADMIN_RESP;
+    resp.payload = "OK";
+    return resp;
+}
+
+// 删除管理员: 禁止删除自己
+// 协议: payload.json[0]=username
+Response_t handle_admin_delete(const ReqContext_t& ctx)
+{
+    Response_t resp;
+    const std::string name = field_at(ctx.body.payload(), 0);
+    if (name.empty())
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Username required";
+        return resp;
+    }
+    if (name == ctx.session.name)
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Cannot delete yourself";
+        return resp;
+    }
+    if (!ctx.admin_repo.remove(name))
+    {
+        resp.cmd_type = Protocal::CMD_ERROR;
+        resp.payload = "Delete failed: " + ctx.admin_repo.last_error();
+        return resp;
+    }
+    print_log(info, "handle_admin_delete: '%s' deleted by '%s'",
+              name.c_str(), ctx.session.name.c_str());
+    resp.cmd_type = Protocal::CMD_ADMIN_RESP;
+    resp.payload = "OK";
+    return resp;
+}
+
 void register_all_server(Dispatcher& dispatcher)
 {
     dispatcher.register_handler(Protocal::CMD_LOGIN_REQ,               STUDENT, handle_login);
@@ -320,5 +458,9 @@ void register_all_server(Dispatcher& dispatcher)
     dispatcher.register_handler(Protocal::CMD_ADD_REQ,                 ADMIN,   handle_add);
     dispatcher.register_handler(Protocal::CMD_UPDATE_REQ,              ADMIN,   handle_update);
     dispatcher.register_handler(Protocal::CMD_DELETE_REQ,              ADMIN,   handle_delete);
-    print_log(info, "register_all_server: 10 handlers registered");
+    dispatcher.register_handler(Protocal::CMD_ADMIN_LIST_REQ,          ADMIN,   handle_admin_list);
+    dispatcher.register_handler(Protocal::CMD_ADMIN_CREATE_REQ,        ADMIN,   handle_admin_create);
+    dispatcher.register_handler(Protocal::CMD_ADMIN_UPDATE_REQ,        ADMIN,   handle_admin_update);
+    dispatcher.register_handler(Protocal::CMD_ADMIN_DELETE_REQ,        ADMIN,   handle_admin_delete);
+    print_log(info, "register_all_server: 14 handlers registered");
 }

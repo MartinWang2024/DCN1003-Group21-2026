@@ -22,6 +22,12 @@ namespace Protocal
         CMD_UPDATE_REQ              = C2S | 0x0202,   // 协议请求: 变更
         CMD_DELETE_REQ              = C2S | 0x0203,   // 协议请求: 删除
         CMD_ADMIN_RESP              = S2C | 0x0280,   // 协议响应: 管理员
+        // 管理员账号管理（需 admin 权限）
+        CMD_ADMIN_LIST_REQ          = C2S | 0x0210,   // 协议请求: 列出管理员
+        CMD_ADMIN_CREATE_REQ        = C2S | 0x0211,   // 协议请求: 新建管理员
+        CMD_ADMIN_UPDATE_REQ        = C2S | 0x0212,   // 协议请求: 修改管理员 (用户名/密码)
+        CMD_ADMIN_DELETE_REQ        = C2S | 0x0213,   // 协议请求: 删除管理员
+        CMD_ADMIN_LIST_RESP         = S2C | 0x0290,   // 协议响应: 管理员列表
         // 通用响应 / 错误
         CMD_OK                      = S2C | 0xFF00,   // 协议响应: 成功
         CMD_ERROR                   = S2C | 0xFFFF,   // 协议响应: 失败

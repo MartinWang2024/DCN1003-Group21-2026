@@ -311,6 +311,25 @@ public:
 	bool verify_login(const std::string& username, const std::string& password) const;
 
 	/**
+	 * @brief 列出全部管理员用户名 (不返回密码)
+	 */
+	std::vector<std::string> list_usernames() const;
+	/**
+	 * @brief 修改管理员用户名 (旧 -> 新)
+	 * @return 成功 true; 旧账号不存在 / 新账号已占用 / 数据库错误 返回 false
+	 */
+	bool rename(const std::string& old_username, const std::string& new_username) const;
+	/**
+	 * @brief 删除管理员账号
+	 * @return 成功 true; 不存在或数据库错误返回 false
+	 */
+	bool remove(const std::string& username) const;
+	/**
+	 * @brief 是否存在该用户名
+	 */
+	bool exists(const std::string& username) const;
+
+	/**
 	 * @brief 获取最近一次错误信息
 	 * @return 最近一次错误信息字符串引用
 	 */
