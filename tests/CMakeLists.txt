@@ -160,3 +160,77 @@ if (WIN32)
 endif ()
 add_test(NAME test_socket_handler COMMAND test_socket_handler)
 
+# ───────── test_listener: server 端 create_listener 工厂 ─────────
+add_executable(test_listener
+        test_listener.cpp
+        ${CMAKE_SOURCE_DIR}/programs/Server/src/listener.cpp
+)
+target_include_directories(test_listener
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/programs/Server/include
+)
+target_link_libraries(test_listener
+    PRIVATE
+        dcn_driver
+)
+if (WIN32)
+    target_link_libraries(test_listener PRIVATE Ws2_32)
+endif ()
+add_test(NAME test_listener COMMAND test_listener)
+
+# ───────── test_client_e2e: connect_to + 8 个 client_* 完整往返 ─────────
+# server 和 client 都有 cmdreg.h, 不能在同 target 里同时 include 两边目录,
+# 因此拆成 OBJECT 库, 每个 .cpp 用自己那侧的 include path 独立编译
+add_library(_test_server_cmdreg OBJECT
+        ${CMAKE_SOURCE_DIR}/programs/Server/src/cmdreg.cpp
+)
+target_include_directories(_test_server_cmdreg
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/programs/Server/include
+)
+target_link_libraries(_test_server_cmdreg PRIVATE dcn_driver protobuf openssl)
+
+add_library(_test_client_cmdreg OBJECT
+        ${CMAKE_SOURCE_DIR}/programs/Client/src/cmdreg.cpp
+        ${CMAKE_SOURCE_DIR}/programs/Client/src/connect_to.cpp
+)
+target_include_directories(_test_client_cmdreg
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/programs/Client/include
+)
+target_link_libraries(_test_client_cmdreg PRIVATE dcn_driver protobuf openssl)
+
+add_executable(test_client_e2e
+        test_client_e2e.cpp
+        $<TARGET_OBJECTS:_test_server_cmdreg>
+        $<TARGET_OBJECTS:_test_client_cmdreg>
+)
+target_include_directories(test_client_e2e
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/programs/Client/include
+        ${CMAKE_SOURCE_DIR}/programs/Server/include
+)
+target_link_libraries(test_client_e2e
+    PRIVATE
+        dcn_driver
+        sqlite3
+        protobuf
+        openssl
+)
+if (WIN32)
+    target_link_libraries(test_client_e2e PRIVATE Ws2_32)
+endif ()
+
+add_custom_command(TARGET test_client_e2e POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libcrypto-3-x64.dll
+        ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libssl-3-x64.dll
+        $<TARGET_FILE_DIR:test_client_e2e>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/key/app.key
+        $<TARGET_FILE_DIR:test_client_e2e>
+    COMMENT "Copying OpenSSL DLLs and app.key for test_client_e2e"
+)
+
+add_test(NAME test_client_e2e COMMAND test_client_e2e)
+
