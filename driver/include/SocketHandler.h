@@ -2,6 +2,7 @@
 // #include <psdk_inc/_socket_types.h>
 #include "error.h"
 #include <ws2tcpip.h>
+#include <cstring>
 
 namespace TcpSocket
 {
@@ -19,14 +20,19 @@ namespace TcpSocket
             SocketHandler& operator=(const SocketHandler&) = delete;
 
             // 允许资源所有权转移
-            SocketHandler(SocketHandler&& other) noexcept : socket(other.socket) {
-                other.socket = INVALID_SOCKET;   // ★ 关键：原对象不再持有
+            SocketHandler(SocketHandler&& other) noexcept
+                : socket(other.socket), port(other.port)
+            {
+                std::memcpy(ip, other.ip, sizeof(ip));
+                other.socket = INVALID_SOCKET;
+                other.ip[0] = '\0';
+                other.port = -1;
             }
-            SocketHandler& operator=(SocketHandler&&) noexcept;
+            SocketHandler& operator=(SocketHandler&& other) noexcept;
 
 
             ~SocketHandler() {
-                if (socket != INVALID_SOCKET)    // ★ 防止 closesocket(0) 之类
+                if (socket != INVALID_SOCKET)    // 防止 closesocket(0) 之类
                     closesocket(socket);
             }
 

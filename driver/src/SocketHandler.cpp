@@ -10,6 +10,22 @@ SocketHandler::SocketHandler(SOCKET client_sock, sockaddr_in client_addr)
     port = ntohs(client_addr.sin_port);
 }
 
+SocketHandler& SocketHandler::operator=(SocketHandler&& other) noexcept
+{
+    if (this == &other) return *this;
+
+    if (socket != INVALID_SOCKET) closesocket(socket);
+
+    socket = other.socket;
+    port = other.port;
+    std::memcpy(ip, other.ip, sizeof(ip));
+
+    other.socket = INVALID_SOCKET;
+    other.ip[0] = '\0';
+    other.port = -1;
+    return *this;
+}
+
 
 Error::ErrorInfo SocketHandler::socket_send(const void* send_data, size_t data_len)
 {
