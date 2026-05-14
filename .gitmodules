@@ -7,3 +7,6 @@
 [submodule "dcn_flutter_client"]
 	path = dcn_flutter_client
 	url = https://github.com/Rinsutoringu/dcn_flutter_client.git
+[submodule "third_party/sqlite3"]
+	path = third_party/sqlite3
+	url = https://github.com/azadkuh/sqlite-amalgamation.git
