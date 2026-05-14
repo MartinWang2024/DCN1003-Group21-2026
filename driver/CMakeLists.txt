@@ -19,3 +19,7 @@ target_link_libraries(dcn_driver
         protobuf
         openssl
 )
+
+if (WIN32)
+    target_link_libraries(dcn_driver PUBLIC ws2_32)
+endif ()
