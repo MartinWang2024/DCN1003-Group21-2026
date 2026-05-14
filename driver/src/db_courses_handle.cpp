@@ -225,6 +225,41 @@ std::vector<Course> CourseRepository::view_all_courses() const {
 	return courses;
 }
 
+std::vector<Course> CourseRepository::view_all_courses_paged(int offset, int limit) const {
+	std::vector<Course> courses;
+	if (limit <= 0) return courses;
+	if (offset < 0) offset = 0;
+	const std::string sql =
+		std::string(kJoinSelect) +
+		" ORDER BY c.code, c.section, s.semester, s.day"
+		" LIMIT " + std::to_string(limit) +
+		" OFFSET " + std::to_string(offset) + ";";
+	prepare_and_collect(sql, {}, courses);
+	return courses;
+}
+
+int CourseRepository::count_courses() const {
+	sqlite3* db = db_.raw_handle();
+	if (db == nullptr) {
+		db_.set_error("Database is not open.");
+		return 0;
+	}
+	const char* sql =
+		"SELECT COUNT(*) FROM courses c"
+		" INNER JOIN schedules s ON c.code = s.course_code AND c.section = s.section;";
+	sqlite3_stmt* stmt = nullptr;
+	if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+		db_.set_error(sqlite3_errmsg(db));
+		return 0;
+	}
+	int count = 0;
+	if (sqlite3_step(stmt) == SQLITE_ROW) {
+		count = sqlite3_column_int(stmt, 0);
+	}
+	sqlite3_finalize(stmt);
+	return count;
+}
+
 bool CourseRepository::prepare_and_collect(const std::string& sql,
 										   const std::vector<std::string>& bindings,
 										   std::vector<Course>& out_courses) const {
