@@ -3,6 +3,7 @@ add_library(dcn_driver STATIC
     src/database.cpp
     src/db_courses_handle.cpp
     src/db_administrators_handle.cpp
+    src/password_hash.cpp
     src/SocketHandler.cpp
     src/log.cpp
     src/CmdHandler.cpp
