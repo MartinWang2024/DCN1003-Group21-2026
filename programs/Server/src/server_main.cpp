@@ -1,4 +1,6 @@
 #include "server_main.h"
+#include "listener.h"
+#include "winsock_guard.h"
 #include <ws2tcpip.h>
 #include <iostream>
 #include <thread>
@@ -75,49 +77,17 @@ void handle_client(SOCKET client_sock, sockaddr_in client_addr) {
 }
 
 int main() {
-    // 初始化 Winsock
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        std::cerr << "WSAStartup failed: " << WSAGetLastError() << std::endl;
+    TcpSocket::WinsockGuard winsock;
+    if (!winsock.ok()) {
+        std::cerr << winsock.last_error().message << std::endl;
         return 1;
     }
 
-    // 创建监听 socket
-    SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    SOCKET listen_sock = create_listener(PORT, BACKLOG);
     if (listen_sock == INVALID_SOCKET) {
-        std::cerr << "socket() failed: " << WSAGetLastError() << std::endl;
-        WSACleanup();
         return 1;
     }
 
-    // 允许地址复用
-    int opt = 1;
-    setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR,
-               reinterpret_cast<const char*>(&opt), sizeof(opt));
-
-    // 绑定
-    sockaddr_in addr{};
-    addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port        = htons(PORT);
-    if (bind(listen_sock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR) {
-        std::cerr << "bind() failed: " << WSAGetLastError() << std::endl;
-        closesocket(listen_sock);
-        WSACleanup();
-        return 1;
-    }
-
-    // 监听
-    if (listen(listen_sock, BACKLOG) == SOCKET_ERROR) {
-        std::cerr << "listen() failed: " << WSAGetLastError() << std::endl;
-        closesocket(listen_sock);
-        WSACleanup();
-        return 1;
-    }
-
-    std::cout << "[*] Server listening on port " << PORT << " ..." << std::endl;
-
-    // Accept 循环
     while (true) {
         sockaddr_in client_addr{};
         int addr_len = sizeof(client_addr);
@@ -129,11 +99,9 @@ int main() {
             continue;
         }
 
-        // 为每个客户端创建独立线程
         std::thread(handle_client, client_sock, client_addr).detach();
     }
 
     closesocket(listen_sock);
-    WSACleanup();
     return 0;
 }
