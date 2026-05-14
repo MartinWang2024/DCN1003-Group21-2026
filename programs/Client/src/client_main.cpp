@@ -139,6 +139,17 @@ public:
         emit_resp(r);
     }
 
+    void handle_view_all_page(const std::vector<std::string>& f) {
+        if (!require_connected()) return;
+        if (f.size() < 3) { emit_err("VIEW_ALL_PAGE requires <offset> <limit>"); return; }
+        int offset = std::atoi(f[1].c_str());
+        int limit  = std::atoi(f[2].c_str());
+        ClientResponse r;
+        auto e = dcn_client::client_view_all_page(*sock, offset, limit, r);
+        if (e.e != Error::SUCCESS) { emit_err(e.message); sock.reset(); return; }
+        emit_resp(r);
+    }
+
     void handle_add(const std::vector<std::string>& f) {
         if (!require_connected()) return;
         if (f.size() < 8) { emit_err("ADD requires 7 fields"); return; }
@@ -189,6 +200,7 @@ int run_bridge()
         else if (verb == "QUERY_INSTRUCTOR")  sess.handle_query_instructor(f);
         else if (verb == "QUERY_SEMESTER")    sess.handle_query_semester(f);
         else if (verb == "VIEW_ALL")          sess.handle_view_all();
+        else if (verb == "VIEW_ALL_PAGE")     sess.handle_view_all_page(f);
         else if (verb == "ADD")               sess.handle_add(f);
         else if (verb == "UPDATE")            sess.handle_update(f);
         else if (verb == "DELETE")            sess.handle_delete(f);
