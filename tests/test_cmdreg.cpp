@@ -32,9 +32,9 @@ struct Fixture
 
         admins.insert_or_replace({"alice", "secret123"});
 
-        courses.insert_or_replace({"CS101", "Intro to CS",   "A", "Dr. Smith", "Mon", "09:00-10:30", "Room 1"});
-        courses.insert_or_replace({"CS101", "Intro to CS",   "B", "Dr. Smith", "Tue", "09:00-10:30", "Room 2"});
-        courses.insert_or_replace({"MA200", "Linear Algebra","A", "Prof. Lee", "Wed", "10:00-11:30", "Room 3"});
+        courses.insert_or_replace({"CS101", "Intro to CS",   "A", "Dr. Smith", "Mon", "09:00-10:30", "2026S1", "Room 1"});
+        courses.insert_or_replace({"CS101", "Intro to CS",   "B", "Dr. Smith", "Tue", "09:00-10:30", "2026S1", "Room 2"});
+        courses.insert_or_replace({"MA200", "Linear Algebra","A", "Prof. Lee", "Wed", "10:00-11:30", "2026S1", "Room 3"});
     }
 
     ReqContext_t make_ctx(const MsgBody& body)
