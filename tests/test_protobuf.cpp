@@ -2,8 +2,8 @@
 #include "test.h"
 
 // ─────────────────────────────────────────────
-// Protobuf 序列化 / 反序列化测试
-// Proto 结构:
+// Protobuf serialization / deserialization tests.
+// Proto schema:
 //   message Payload  { repeated bytes json = 1; }
 //   message MsgBody  { uint32 cmd_type=1; uint32 req_id=2;
 //                      uint32 timestamp=3; Payload payload=4; }
@@ -21,13 +21,13 @@ TEST(test_protobuf_pack)
     std::string binary_data;
     body.SerializeToString(&binary_data);
 
-    std::cout << "打包成功！二进制数据的长度是: " << binary_data.length() << " 字节" << std::endl;
+    std::cout << "Pack OK. Binary length: " << binary_data.length() << " bytes" << std::endl;
     REQUIRE(!binary_data.empty());
 }
 
 TEST(test_protobuf_unpack)
 {
-    // ── 构建消息 ──────────────────────────────
+    // -- Build message --
     MsgBody body;
     body.set_cmd_type(2);
     body.set_req_id(10086);
@@ -38,20 +38,20 @@ TEST(test_protobuf_unpack)
     payload->add_json(R"({"course":"English","score":92})");
     payload->add_json(R"({"course":"Computer Science","score":78})");
 
-    // ── 序列化 ────────────────────────────────
+    // -- Serialize --
     std::string binary_data;
     body.SerializeToString(&binary_data);
 
-    // ── 反序列化 ──────────────────────────────
+    // -- Deserialize --
     MsgBody received;
     REQUIRE(received.ParseFromString(binary_data));
 
-    // ── 验证标量字段 ──────────────────────────
+    // -- Verify scalar fields --
     REQUIRE(received.cmd_type()  == 2);
     REQUIRE(received.req_id()    == 10086);
     REQUIRE(received.timestamp() == 1698144000);
 
-    // ── 验证 payload.json 数组 ─────────────────
+    // -- Verify payload.json array --
     REQUIRE(received.payload().json_size() == 3);
     REQUIRE(received.payload().json(0) == R"({"course":"Math","score":85})");
     REQUIRE(received.payload().json(1) == R"({"course":"English","score":92})");
@@ -60,7 +60,7 @@ TEST(test_protobuf_unpack)
 
 TEST(test_build_up_msg)
 {
-    // 构建一条完整消息并验证序列化 / 反序列化往返一致
+    // Build a complete message and verify round-trip equivalence.
     MsgBody body;
     body.set_cmd_type(3);
     body.set_req_id(42);
@@ -80,7 +80,7 @@ TEST(test_build_up_msg)
 
 TEST(test_empty_payload)
 {
-    // payload 为空时仍能正常序列化 / 反序列化
+    // Empty payload must still serialize / deserialize correctly.
     MsgBody body;
     body.set_req_id(1);
 

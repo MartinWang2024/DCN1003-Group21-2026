@@ -3,9 +3,9 @@
 
 namespace TcpSocket
 {
-    // Winsock 全局生命周期 RAII 管理
-    // 进程入口构造一次, 析构时自动 WSACleanup
-    // 失败时通过 last_error() 暴露错误码, 不抛异常
+    // RAII guard for Winsock global lifecycle.
+    // Construct once at process entry; destructor calls WSACleanup.
+    // On failure exposes error code via last_error() (no exceptions).
     class WinsockGuard
     {
     public:

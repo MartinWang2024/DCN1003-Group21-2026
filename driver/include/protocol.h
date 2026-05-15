@@ -16,13 +16,13 @@ namespace Protocal {
         inline std::atomic<uint32_t> g_req_id_counter{1};
     }
 
-    // 包头
+    // Wire header (plaintext)
     struct MsgHeader_t
     {
-        uint32_t version{};		// 协议版本号
-        uint32_t body_len{};		// 加密后有效字段长度
-        uint8_t iv[16]{};			// AES初始向量
-        uint8_t mac[32] = {0};	// 消息认证码
+        uint32_t version{};
+        uint32_t body_len{};       // ciphertext length
+        uint8_t iv[16]{};          // AES IV (random per packet)
+        uint8_t mac[32] = {0};     // HMAC-SHA256 over plaintext MsgBody
     };
     // struct MsgBody
     // {

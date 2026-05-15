@@ -19,14 +19,14 @@ namespace Protocal::Dispatch
         ADMIN = 1,
     };
 
-    // 会话信息
+    // Session state
     struct Session_t
     {
-        role_t role = STUDENT;  // 默认权限等级
+        role_t role = STUDENT;
         std::string name;
     };
 
-    // 请求上下文
+    // Request context
     struct ReqContext_t
     {
         const MsgBody& body;
@@ -35,7 +35,7 @@ namespace Protocal::Dispatch
         dcn_database::AdministratorRepository& admin_repo;
     };
 
-    // 响应数据结构
+    // Response payload
     #pragma pack(push, 1)
     struct Response_t
     {
@@ -44,49 +44,51 @@ namespace Protocal::Dispatch
     };
     #pragma pack(pop)
 
-    // 函数模板
+    // Handler signature
     using HandlerFn = std::function<Response_t(const ReqContext_t&)>;
 
     class Dispatcher {
     public:
         /**
-         * 注册命令
-         * @param cmd 命令码
-         * @param required 权限需求
-         * @param fn 命令对应的处理函数
+         * Register a command handler.
+         * @param cmd      Command code
+         * @param required Minimum role required
+         * @param fn       Handler function
          */
         Error::ErrorInfo register_handler(cmdtype_t cmd, role_t required, HandlerFn fn);
 
         /**
-         * 命令 handler 调度器
-         * @param ctx 请求上下文，包含请求数据、会话信息和数据库访问接口
-         * @return 响应数据，包含响应命令码和响应负载
+         * Dispatch an incoming request to the registered handler.
+         * Performs centralized role-based access control before invoking the handler.
+         * Never throws — exceptions are caught and turned into CMD_SERVER_ERROR.
+         * @param ctx  Request context with body, session, and DB repos
+         * @return     Response with cmd_type and serialized payload
          */
         Response_t dispatch(const ReqContext_t& ctx);
 
         /**
-         * 操作传输层函数发送响应数据-服务端函数
-         * @param sh socket handler 句柄，包含发送接口和客户端信息
-         * @param resp 来自会话层的响应数据，包含响应命令码和响应负载
-         * @return 错误码
+         * Send a response on the server side (S2C direction).
+         * @param sh   Socket handle
+         * @param resp Response to send
+         * @return     Error code
          */
         static Error::ErrorInfo send_response_s(TcpSocket::SocketHandler& sh, const Response_t& resp);
 
         /**
-         * 操作传输层函数发送响应数据-客户端函数
-         * @param sh socket handler 句柄，包含发送接口和客户端信息
-         * @param resp 来自会话层的响应数据，包含响应命令码和响应负载
-         * @return 错误码
+         * Send a response on the client side (C2S direction).
+         * @param sh   Socket handle
+         * @param resp Response to send
+         * @return     Error code
          */
         static Error::ErrorInfo send_response_c(TcpSocket::SocketHandler& sh, const Response_t& resp);
 
     private:
-        // 处理函数与其对应权限的组合结构体
+        // (handler, required_role) pair
         struct Entry_t {
             role_t required;
             HandlerFn fn;
         };
-        std::unordered_map<uint32_t, Entry_t> table_;  // 命令注册表
+        std::unordered_map<uint32_t, Entry_t> table_;  // command registry
     };
 
 }

@@ -1,6 +1,6 @@
-┌──────────────┐    MsgBody   ┌─────────────────┐    业务调用     ┌──────────────┐
-│ Package_recv │ ───────────► │   Dispatcher    │ ─────────────► │ Handler 们   │
-│              │              │ (按 cmd_type 分发)│               │ (LOGIN/QUERY)│
+┌──────────────┐    MsgBody   ┌─────────────────┐   business call ┌──────────────┐
+│ Package_recv │ ───────────► │   Dispatcher    │ ─────────────► │   Handlers   │
+│              │              │ (route by cmd)  │                │ (LOGIN/QUERY)│
 └──────────────┘              └─────────────────┘                └──────────────┘
                                        │                                  │
                                        │ MsgBody (response)               │
@@ -14,17 +14,17 @@
 
 ┌─────────────────────────────────────────────────────┐
 │  L4 Connection Loop (per-thread)                    │
-│      while(alive) { recv → dispatch → send }        │
+│      while(alive) { recv -> dispatch -> send }      │
 ├─────────────────────────────────────────────────────┤
 │  L3 Dispatcher                                      │
-│      - 路由 cmd_type 到 Handler                      │
-│      - 鉴权检查（admin/student）                      │
-│      - 异常→错误响应转换                               │
+│      - Route cmd_type to its Handler                │
+│      - Authorization check (admin / student)        │
+│      - Convert exceptions into error responses      │
 ├─────────────────────────────────────────────────────┤
 │  L2 Handlers (LoginHandler / QueryHandler / ...)    │
-│      - 解析业务 payload (JSON)                       │
-│      - 调 Database                                  │
-│      - 构造响应 payload                              │
+│      - Parse business payload (JSON)                │
+│      - Call Database                                │
+│      - Build response payload                       │
 ├─────────────────────────────────────────────────────┤
 │  L1 Database / Domain (CourseRepository, ...)       │
 └─────────────────────────────────────────────────────┘

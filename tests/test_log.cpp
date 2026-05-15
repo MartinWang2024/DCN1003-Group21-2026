@@ -6,7 +6,7 @@
 #include "log.h"
 
 // ─────────────────────────────────────────────
-// CourseRepository 测试
+// CourseRepository tests.
 // ─────────────────────────────────────────────
 TEST(test_time)
 {

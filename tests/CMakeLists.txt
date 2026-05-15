@@ -8,7 +8,7 @@ target_link_libraries(test_openssl
         openssl
 )
 
-# 复制 OpenSSL DLL 到测试输出目录
+# Copy OpenSSL DLLs to the test output directory
 add_custom_command(TARGET test_openssl POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_SOURCE_DIR}/third_party/openssl/libopenssl/lib/libcrypto-3-x64.dll
@@ -124,7 +124,7 @@ if (WIN32)
 endif ()
 add_test(NAME test_socket_handler COMMAND test_socket_handler)
 
-# ───────── test_listener: server 端 create_listener 工厂 ─────────
+# test_listener: server-side create_listener factory
 add_executable(test_listener
         test_listener.cpp
         ${CMAKE_SOURCE_DIR}/programs/Server/src/listener.cpp
@@ -142,9 +142,9 @@ if (WIN32)
 endif ()
 add_test(NAME test_listener COMMAND test_listener)
 
-# ───────── test_client_e2e: connect_to + 8 个 client_* 完整往返 ─────────
-# server 和 client 都有 cmdreg.h, 不能在同 target 里同时 include 两边目录,
-# 因此拆成 OBJECT 库, 每个 .cpp 用自己那侧的 include path 独立编译
+# test_client_e2e: connect_to + 8 client_* full round-trips
+# Both server and client define cmdreg.h, they cannot share an include path
+# in the same target. Build each side as an OBJECT lib with its own includes.
 add_library(_test_server_cmdreg OBJECT
         ${CMAKE_SOURCE_DIR}/programs/Server/src/cmdreg.cpp
 )

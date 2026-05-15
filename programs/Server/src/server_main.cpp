@@ -23,7 +23,7 @@ void request_shutdown() {
     g_running = false;
     SOCKET s = g_listen_sock.exchange(INVALID_SOCKET);
     if (s != INVALID_SOCKET) {
-        // 关闭监听 socket 让阻塞中的 accept() 立刻返回，触发主循环退出
+        // Close the listening socket so a blocked accept() returns immediately and the main loop exits.
         closesocket(s);
     }
 }
@@ -106,7 +106,7 @@ int main()
         std::cerr << "Failed to open/init admins DB: " << admins.last_error() << std::endl;
         return 1;
     }
-    // 首次启动注入默认管理员, 否则任何客户端都登不上
+    // Seed a default administrator on first launch; otherwise no client could ever log in.
     if (!admins.verify_login("admin", "admin123"))
     {
         admins.insert_or_replace({"admin", "admin123"});

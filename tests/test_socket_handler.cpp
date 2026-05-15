@@ -1,5 +1,5 @@
-// 测试 SocketHandler 的 RAII / 移动语义 / send-recv 循环正确性
-// 通过 loopback (127.0.0.1) 构造真实 TCP socket pair 进行行为验证
+// Tests SocketHandler RAII, move semantics, and send/recv loop correctness.
+// Uses a real loopback (127.0.0.1) TCP socket pair for behavioral verification.
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -18,7 +18,7 @@
 using TcpSocket::SocketHandler;
 
 // ─────────────────────────────────────────────
-// 一次性 Winsock 初始化 / 清理
+// One-shot Winsock init / teardown.
 // ─────────────────────────────────────────────
 struct WinsockGuard {
     WinsockGuard() {
@@ -30,8 +30,8 @@ struct WinsockGuard {
 };
 
 // ─────────────────────────────────────────────
-// 建立 loopback socket pair, 直接返回两端 SocketHandler
-// 与 test_protocol 同款工具, 拷贝在此避免跨文件依赖
+// Build a loopback socket pair and return both ends as SocketHandlers.
+// Same helper as test_protocol; duplicated here to avoid cross-file dependencies.
 // ─────────────────────────────────────────────
 struct SockPair {
     SocketHandler server;
@@ -82,7 +82,7 @@ static SockPair make_loopback_pair() {
 }
 
 
-// ========== 基础 send / recv ==========
+// ========== Basic send / recv ==========
 
 TEST(test_basic_send_recv)
 {
@@ -95,8 +95,8 @@ TEST(test_basic_send_recv)
     REQUIRE(std::string(buf) == "hello world");
 }
 
-// 验证 socket_recv 第 49 行 data_ptr+total_recv bug 已修复
-// 大于 TCP 单包尺寸的数据必然分多次 recv 返回
+// Verifies the data_ptr+total_recv bug at socket_recv:49 is fixed.
+// Data larger than a single TCP packet must arrive over multiple recv calls.
 TEST(test_large_payload_recv_loop)
 {
     auto p = make_loopback_pair();
@@ -115,7 +115,7 @@ TEST(test_large_payload_recv_loop)
     REQUIRE(rx == tx);
 }
 
-// 远端断开后 recv 应返回错误而非阻塞
+// Once the peer closes, recv must return an error instead of blocking.
 TEST(test_recv_after_peer_close)
 {
     auto p = make_loopback_pair();
@@ -129,7 +129,7 @@ TEST(test_recv_after_peer_close)
 }
 
 
-// ========== 移动构造 ==========
+// ========== Move construction ==========
 
 TEST(test_move_ctor_transfers_ownership)
 {
@@ -147,7 +147,7 @@ TEST(test_move_ctor_transfers_ownership)
     REQUIRE(std::string(buf) == "via-moved");
 }
 
-// 移动后源对象的 socket 应为 INVALID_SOCKET, 调用其 send 必然失败
+// After move, the source's socket must be INVALID_SOCKET and any send on it must fail.
 TEST(test_move_ctor_clears_source)
 {
     auto p = make_loopback_pair();
@@ -158,8 +158,8 @@ TEST(test_move_ctor_clears_source)
     REQUIRE(err.e != Error::SUCCESS);
 }
 
-// 验证关键不变量: 移动后源对象析构不会关闭已转移的 socket
-// 通过让 moved 仍能正常 recv 来证明 socket 句柄未被双重 close
+// Key invariant: destroying the moved-from object does not close the transferred socket.
+// We prove the handle was not double-closed by ensuring moved can still recv.
 TEST(test_no_double_close_after_move)
 {
     auto p = make_loopback_pair();
@@ -181,7 +181,7 @@ TEST(test_no_double_close_after_move)
 }
 
 
-// ========== 移动赋值 ==========
+// ========== Move assignment ==========
 
 TEST(test_move_assign_releases_old_socket)
 {
@@ -204,7 +204,7 @@ TEST(test_move_assign_releases_old_socket)
     REQUIRE(err.e != Error::SUCCESS);
 }
 
-// 自赋值: a = std::move(a) 不能关闭自己的 socket, 否则后续 send/recv 全废
+// Self-assignment: a = std::move(a) must not close its own socket; otherwise all subsequent send/recv break.
 TEST(test_self_move_assign_safe)
 {
     auto p = make_loopback_pair();
@@ -221,7 +221,7 @@ TEST(test_self_move_assign_safe)
 }
 
 
-// ========== 析构 ==========
+// ========== Destruction ==========
 
 TEST(test_destructor_closes_socket)
 {

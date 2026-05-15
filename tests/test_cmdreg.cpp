@@ -16,7 +16,7 @@ namespace {
 constexpr char FIELD_SEP = '\x1F';
 constexpr char RECORD_SEP = '\x1E';
 
-// Test fixture: 内存数据库 + 预置数据 + 默认会话
+// Test fixture: in-memory DB + seeded data + default session.
 struct Fixture
 {
     dcn_database::CourseRepository courses;
@@ -43,7 +43,7 @@ struct Fixture
     }
 };
 
-// 构造一个携带 cmd_type 和若干字符串字段的 MsgBody
+// Build a MsgBody carrying cmd_type and a list of string fields.
 MsgBody make_body(uint32_t cmd, std::initializer_list<std::string> fields = {})
 {
     MsgBody body;
@@ -55,7 +55,7 @@ MsgBody make_body(uint32_t cmd, std::initializer_list<std::string> fields = {})
     return body;
 }
 
-// 计算 serialize_courses 输出中的记录数: count<RS>...<RS>...
+// Count records in serialize_courses output: count<RS>...<RS>...
 size_t parse_record_count(const std::string& s)
 {
     size_t pos = s.find(RECORD_SEP);
@@ -290,7 +290,7 @@ TEST(test_delete_empty_code)
     REQUIRE(resp.cmd_type == CMD_ERROR);
 }
 
-// ========== Dispatcher 路由 + 鉴权 ==========
+// ========== Dispatcher routing + authorization ==========
 
 TEST(test_dispatcher_routes_login)
 {

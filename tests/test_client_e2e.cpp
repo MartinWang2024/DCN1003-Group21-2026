@@ -1,6 +1,6 @@
-// 测试 client API: connect_to + 8 个 client_* 函数
-// 启动一个 in-process loopback server (真 socket + Dispatcher + 内存 DB),
-// 客户端通过 connect_to 连入, 跑完整的 8 个调用并校验响应解析
+// Tests the client API: connect_to + the 8 client_* functions.
+// Spins up an in-process loopback server (real socket + Dispatcher + in-memory DB);
+// the client connects via connect_to, exercises all 8 calls and verifies response parsing.
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -42,7 +42,7 @@ struct WinsockGuard {
 };
 
 
-// loopback server: bind 到随机端口, 单线程 accept 单 client, 用 Dispatcher 跑会话直到客户端断开
+// Loopback server: bind to a random port, single-thread accept of a single client, run the session via Dispatcher until the client disconnects.
 class LoopbackServer
 {
 public:
@@ -127,8 +127,8 @@ private:
 };
 
 
-// 测试夹具: 内存 DB + 默认 admin/course + 启动 server 并立即 connect_to
-// server 用 unique_ptr 包装, 因 LoopbackServer 含 thread/atomic 不可移动
+// Test fixture: in-memory DB + default admin/course; start server and connect_to immediately.
+// Server is wrapped in unique_ptr because LoopbackServer holds a thread/atomic and is not movable.
 struct E2EFixture
 {
     dcn_database::CourseRepository courses;
@@ -166,7 +166,7 @@ struct E2EFixture
 };
 
 
-// ========== connect_to 失败路径 ==========
+// ========== connect_to failure paths ==========
 
 TEST(test_connect_to_invalid_ip)
 {
@@ -183,7 +183,7 @@ TEST(test_connect_to_unused_port_fails)
 }
 
 
-// ========== 基础往返: login 成功路径 ==========
+// ========== Basic round-trip: login success path ==========
 
 TEST(test_login_success_roundtrip)
 {
@@ -207,7 +207,7 @@ TEST(test_login_wrong_password_returns_error)
 }
 
 
-// ========== 查询类: parse_courses 反序列化校验 ==========
+// ========== Queries: parse_courses deserialization checks ==========
 
 TEST(test_query_code_parses_courses_correctly)
 {
@@ -263,7 +263,7 @@ TEST(test_query_semester_returns_error)
 }
 
 
-// ========== 写操作: 鉴权 + 端到端 ==========
+// ========== Writes: authorization + end-to-end ==========
 
 TEST(test_add_without_login_blocked_by_dispatcher)
 {

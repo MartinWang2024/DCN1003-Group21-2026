@@ -98,7 +98,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
     Error::ErrorInfo err;
     MsgHeader_t recv_header;
 
-    // 接收包头
+    // Receive header
     if (sh.socket_recv(&recv_header, sizeof(MsgHeader_t)).e != Error::SUCCESS)
     {
         err.e = Error::RECV_ERR;
@@ -106,7 +106,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
         print_log(err, debug);
         return err;
     }
-    // 协议版本校验
+    // Verify protocol version
     if (recv_header.version != std::stoi(APP_VERSION))
     {
         err.e = Error::RECV_ERR;
@@ -114,7 +114,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
         print_log(err, debug);
         return err;
     }
-    // 接收包体
+    // Receive body
     if (recv_header.body_len == 0 || recv_header.body_len > MAX_BODY)
     {
         err.e = Error::RECV_ERR;
@@ -131,7 +131,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
         print_log(err, debug);
         return err;
     }
-    // 包体解码
+    // Decode body
     std::vector<u_char> plaintext = openssl::aes_decrypt(
         buffer,
         openssl::key,
@@ -144,7 +144,7 @@ Error::ErrorInfo Protocal::Package_receive(TcpSocket::SocketHandler &sh, google:
         return err;
     }
 
-    // 执行MAC校验
+    // Verify MAC
     uint8_t recv_calc_mac[32] = {0};
     size_t mac_size;
     openssl::compute_hmac(
