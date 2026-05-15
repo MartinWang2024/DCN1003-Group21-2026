@@ -26,7 +26,7 @@ Course course_from_stmt(sqlite3_stmt* stmt) {
 
 }  // namespace
 
-// 所有查询共用的 SELECT + JOIN 前缀
+// Shared SELECT + JOIN prefix for all queries
 static const char* kJoinSelect =
 	"SELECT c.code, c.title, c.section, c.instructor,"
 	"       s.day, s.duration, s.semester, s.classroom"
@@ -110,7 +110,7 @@ bool CourseRepository::insert_or_replace(const Course& course) const {
 		return false;
 	}
 
-	// 1. 写入 courses 表（冲突时更新 title/instructor）
+	// 1. Upsert into courses (on conflict update title/instructor)
 	const char* courses_sql =
 		"INSERT INTO courses(code, title, section, instructor) VALUES(?,?,?,?)"
 		" ON CONFLICT(code, section) DO UPDATE SET"
@@ -137,7 +137,7 @@ bool CourseRepository::insert_or_replace(const Course& course) const {
 		return false;
 	}
 
-	// 2. 写入 schedules 表（冲突时更新 classroom）
+	// 2. Upsert into schedules (on conflict update classroom)
 	const char* schedules_sql =
 		"INSERT INTO schedules(course_code, section, day, duration, semester, classroom)"
 		" VALUES(?,?,?,?,?,?)"
@@ -307,7 +307,7 @@ bool CourseRepository::delete_course(const std::string& code, const std::string&
 		return false;
 	}
 
-	// FK CASCADE 在 open() 时已全局开启，此处直接删除 courses 行即可级联删除 schedules
+	// FK CASCADE is enabled globally in open(); deleting from courses cascades to schedules.
 	const char* sql = "DELETE FROM courses WHERE code = ? AND section = ?;";
 
 	sqlite3_stmt* stmt = nullptr;
@@ -345,7 +345,7 @@ bool CourseRepository::update(const Course& course) const {
 		return false;
 	}
 
-	// 更新 courses 表中的 title/instructor
+	// Update title/instructor in courses
 	const char* courses_sql =
 		"UPDATE courses SET title=?, instructor=? WHERE code=? AND section=?;";
 
@@ -370,7 +370,7 @@ bool CourseRepository::update(const Course& course) const {
 		return false;
 	}
 
-	// 更新 schedules 表中的 classroom（由完整复合键定位排课记录）
+	// Update classroom in schedules (located by full composite key)
 	const char* schedules_sql =
 		"UPDATE schedules SET classroom=?"
 		" WHERE course_code=? AND section=? AND day=? AND duration=? AND semester=?;";

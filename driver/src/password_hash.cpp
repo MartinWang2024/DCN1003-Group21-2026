@@ -36,7 +36,7 @@ bool from_hex(const std::string& hex, std::vector<unsigned char>& out) {
     return true;
 }
 
-// 常时比较, 防止时序侧信道
+// Constant-time compare to defend against timing side channels
 bool consteq(const std::vector<unsigned char>& a,
              const std::vector<unsigned char>& b) {
     if (a.size() != b.size()) return false;

@@ -88,7 +88,7 @@ bool Database::open(const std::string& db_path) {
 		return false;
 	}
 
-	// 每个连接都需要单独开启 FK 约束（SQLite 默认关闭）
+	// FK enforcement is per-connection in SQLite (default OFF), enable it here
 	char* fk_err = nullptr;
 	const int fk_rc = sqlite3_exec(db_, "PRAGMA foreign_keys = ON;", nullptr, nullptr, &fk_err);
 	if (fk_rc != SQLITE_OK) {
@@ -107,10 +107,19 @@ void Database::close() {
 		return;
 	}
 
-	// 强制把 -wal 文件内容合并回主 .db 并清空 wal，避免进程异常退出后主文件看似未更新
-	sqlite3_wal_checkpoint_v2(db_, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+	// Drain WAL into the main .db before close; if active readers/writers exist
+	// the checkpoint may be partial, so we retry once after blocking on the
+	// connection mutex via sqlite3_db_readonly() (a no-op that serializes here).
+	int cp_rc = sqlite3_wal_checkpoint_v2(db_, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+	if (cp_rc != SQLITE_OK) {
+		(void) sqlite3_db_readonly(db_, "main");
+		sqlite3_wal_checkpoint_v2(db_, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+	}
 
-	sqlite3_close(db_);
+	// sqlite3_close_v2 succeeds even with pending statements (deferred close);
+	// strict sqlite3_close would silently return SQLITE_BUSY and leak the handle,
+	// leaving WAL/SHM files locked on disk.
+	sqlite3_close_v2(db_);
 	db_ = nullptr;
 }
 

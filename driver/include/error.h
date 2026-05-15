@@ -27,8 +27,8 @@ namespace Error
 
     struct ErrorInfo
     {
-        errorcode_t e = SUCCESS;      // 错误码
-        std::string message = {0};  // 错误原因
+        errorcode_t e = SUCCESS;
+        std::string message = {0};
     };
 
 

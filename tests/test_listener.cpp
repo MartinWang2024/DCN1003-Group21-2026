@@ -1,5 +1,5 @@
-// 测试 server 端 create_listener 工厂
-// 验证: 端口绑定 / SO_REUSEADDR 生效 / 可被 connect / 失败路径
+// Tests the server-side create_listener factory.
+// Verifies: port binding / SO_REUSEADDR / connect-ability / failure paths.
 #include <iostream>
 #include <stdexcept>
 #include <thread>
@@ -21,8 +21,8 @@ struct WinsockGuard {
     ~WinsockGuard() { WSACleanup(); }
 };
 
-// 取一个临时端口: 先 bind 到 0 让内核分配, getsockname 拿端口, 立即关闭
-// 这样后续 create_listener 用这个端口几乎总能 bind 成功
+// Acquire an ephemeral port: bind to 0 so the kernel assigns one, query via getsockname, close immediately.
+// This makes the subsequent create_listener call almost always succeed in binding the port.
 static int pick_free_port()
 {
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
@@ -39,7 +39,7 @@ static int pick_free_port()
 }
 
 
-// ========== 基础: 创建监听 socket ==========
+// ========== Basic: create listening socket ==========
 
 TEST(test_create_listener_returns_valid_socket)
 {
@@ -76,10 +76,10 @@ TEST(test_listener_accepts_loopback_connect)
 }
 
 
-// ========== SO_REUSEADDR 行为 ==========
+// ========== SO_REUSEADDR behavior ==========
 
-// 同一端口连开两次, 第二次应仍能 bind 成功
-// (SO_REUSEADDR 在 Windows 上的语义不同, 这里只验证: 先关后开能复用)
+// Open the same port twice; the second bind should still succeed.
+// (SO_REUSEADDR semantics differ on Windows; here we only verify close-then-reopen reuse.)
 TEST(test_listener_port_reusable_after_close)
 {
     int port = pick_free_port();
@@ -94,13 +94,13 @@ TEST(test_listener_port_reusable_after_close)
 }
 
 
-// ========== 边界 ==========
+// ========== Boundary cases ==========
 
-// backlog=0 在大多数平台被静默上调为 1, 应仍能 listen 成功
+// backlog=0 is silently raised to 1 on most platforms and listen() should still succeed.
 TEST(test_listener_zero_backlog_still_works)
 {
     int port = pick_free_port();
-    // backlog=0 在大多数平台被静默上调为 1, 应仍能 listen 成功
+    // backlog=0 is silently raised to 1 on most platforms and listen() should still succeed.
     SOCKET s = create_listener(port, 0);
     REQUIRE(s != INVALID_SOCKET);
     closesocket(s);

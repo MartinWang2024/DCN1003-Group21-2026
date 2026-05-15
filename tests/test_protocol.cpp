@@ -1,5 +1,5 @@
-// 测试 Package_send / Package_receive 全流程：protobuf → HMAC → AES → socket
-// 通过 loopback (127.0.0.1) 构造一对真实 TCP 连接，让发收两端对接自己
+// Tests the Package_send / Package_receive pipeline: protobuf -> HMAC -> AES -> socket.
+// Use loopback (127.0.0.1) to build a real TCP pair so the sender and receiver are wired to each other.
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -16,7 +16,7 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 // ─────────────────────────────────────────────
-// 一次性 Winsock 初始化 / 清理
+// One-shot Winsock init / teardown.
 // ─────────────────────────────────────────────
 struct WinsockGuard {
     WinsockGuard() {
@@ -28,7 +28,7 @@ struct WinsockGuard {
 };
 
 // ─────────────────────────────────────────────
-// 建立 loopback socket pair，二者已通过 TCP 连上
+// Build a loopback socket pair already connected via TCP.
 // ─────────────────────────────────────────────
 struct SockPair {
     TcpSocket::SocketHandler server;
@@ -53,7 +53,7 @@ static SockPair make_loopback_pair() {
     if (getsockname(listener, reinterpret_cast<sockaddr*>(&addr), &alen) == SOCKET_ERROR)
         throw std::runtime_error("getsockname failed");
 
-    // 客户端 connect 与服务端 accept 必须并发，否则互相阻塞
+    // Client connect and server accept must run concurrently; otherwise they block each other.
     SOCKET cli = socket(AF_INET, SOCK_STREAM, 0);
     if (cli == INVALID_SOCKET) throw std::runtime_error("client socket failed");
 
@@ -81,10 +81,10 @@ static SockPair make_loopback_pair() {
 
 static void ensure_key_loaded() {
     if (openssl::readAppKey(openssl::key, "app.key").e != Error::SUCCESS)
-        throw std::runtime_error("readAppKey failed - 请确保运行目录下有 app.key");
+        throw std::runtime_error("readAppKey failed - ensure app.key exists in the working directory");
 }
 
-// 小包发收的便利封装：loopback 上小包 send 立即返回，无需异步
+// Convenience wrapper for small send/recv: small packets return immediately on loopback, no async needed.
 static Error::ErrorInfo send_str(TcpSocket::SocketHandler& sh,
                                   const std::string& payload,
                                   uint32_t cmd_type) {
@@ -96,7 +96,7 @@ static Error::ErrorInfo send_str(TcpSocket::SocketHandler& sh,
 }
 
 // ─────────────────────────────────────────────
-// CASE 1: 基本回环 —— 校验 cmd_type 与 payload
+// CASE 1: basic round-trip - verify cmd_type and payload.
 // ─────────────────────────────────────────────
 TEST(test_send_receive_basic_roundtrip) {
     auto pair = make_loopback_pair();
@@ -113,7 +113,7 @@ TEST(test_send_receive_basic_roundtrip) {
 }
 
 // ─────────────────────────────────────────────
-// CASE 2: 二进制 payload（含 \0）—— 验证不会被字符串截断
+// CASE 2: binary payload (containing \0) - must not be truncated as a C-string.
 // ─────────────────────────────────────────────
 TEST(test_send_receive_binary_payload_with_nulls) {
     auto pair = make_loopback_pair();
@@ -129,8 +129,8 @@ TEST(test_send_receive_binary_payload_with_nulls) {
 }
 
 // ─────────────────────────────────────────────
-// CASE 3: 64KB payload —— 验证 socket_recv 循环正确（暴露分片接收 bug）
-// 大包需要并发：send 可能因内核 buffer 满而阻塞，必须由对端 recv 同步消费
+// CASE 3: 64KB payload - verifies socket_recv loops correctly (catches fragmented-recv bugs).
+// Large packets require concurrency: send may block on a full kernel buffer and depends on the peer's recv to drain it.
 // ─────────────────────────────────────────────
 TEST(test_send_receive_large_payload) {
     auto pair = make_loopback_pair();
@@ -154,8 +154,8 @@ TEST(test_send_receive_large_payload) {
 }
 
 // ─────────────────────────────────────────────
-// CASE 4: 双向 —— client → server → client 完整请求/响应流程
-// 必须并发：服务端的 send 依赖客户端先 receive 才能腾出 buffer
+// CASE 4: bidirectional - full client -> server -> client request/response flow.
+// Must run concurrently: server send depends on the client recv freeing buffer space first.
 // ─────────────────────────────────────────────
 TEST(test_send_receive_bidirectional) {
     auto pair = make_loopback_pair();
@@ -184,7 +184,7 @@ TEST(test_send_receive_bidirectional) {
 }
 
 // ─────────────────────────────────────────────
-// CASE 5: req_id 单调递增 —— 验证不再是硬编码字面量
+// CASE 5: req_id monotonic increase - verifies it is no longer a hard-coded literal.
 // ─────────────────────────────────────────────
 TEST(test_send_req_id_is_monotonic) {
     auto pair = make_loopback_pair();
@@ -204,15 +204,15 @@ TEST(test_send_req_id_is_monotonic) {
 }
 
 // ─────────────────────────────────────────────
-// CASE 6: 错误 key 解密 —— 必须失败（同步发送避免与 key 翻转产生竞态）
+// CASE 6: decryption with a wrong key - must fail (synchronous send avoids races with the key flip).
 // ─────────────────────────────────────────────
 TEST(test_receive_rejects_wrong_key) {
     auto pair = make_loopback_pair();
 
-    // 先用原始 key 把密文完整送进 TCP 缓冲区
+    // First push the full ciphertext into the TCP buffer using the original key.
     REQUIRE(send_str(pair.client, "hello world", 0x5005).e == Error::SUCCESS);
 
-    // 此后再翻转 key，已发出的密文不受影响
+    // Then flip the key; ciphertext already on the wire is unaffected.
     unsigned char saved_key[32];
     memcpy(saved_key, openssl::key, 32);
     openssl::key[0] ^= 0xFF;

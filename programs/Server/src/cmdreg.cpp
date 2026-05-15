@@ -6,13 +6,13 @@ using namespace Protocal::Dispatch;
 
 namespace {
 
-// 查询结果序列化分隔符: 0x1F=字段间, 0x1E=记录间
-// 选用 ASCII 控制字符避免与课程字段（中英文/数字/空格）冲突
+// Query result serialization separators: 0x1F between fields, 0x1E between records.
+// ASCII control characters are chosen to avoid clashing with course field contents.
 constexpr char FIELD_SEP = '\x1F';
 constexpr char RECORD_SEP = '\x1E';
 
-// 把 Course 列表序列化为响应 payload
-// 格式: <count><RS><c1.code><US><c1.title>...<US><c1.classroom><RS><c2...>
+// Serialize a list of Course rows into the response payload.
+// Format: <count><RS><c1.code><US><c1.title>...<US><c1.classroom><RS><c2...>
 std::string serialize_courses(const std::vector<dcn_database::Course>& courses)
 {
     std::ostringstream os;
@@ -32,7 +32,7 @@ std::string serialize_courses(const std::vector<dcn_database::Course>& courses)
     return os.str();
 }
 
-// 把 payload.json 数组按位置取字段, 缺位返回空串
+// Read a field from payload.json by index; returns empty string when missing.
 std::string field_at(const Payload& p, int idx)
 {
     return idx < p.json_size() ? p.json(idx) : std::string{};
@@ -41,10 +41,10 @@ std::string field_at(const Payload& p, int idx)
 }  // namespace
 
 
-// 登录处理
-// 协议: payload.json[0] = username, payload.json[1] = password
-// 成功: session 升级为 ADMIN, 返回 CMD_LOGIN_RESP + "OK"
-// 失败: 返回 CMD_ERROR + 错误说明
+// Login handler.
+// Protocol: payload.json[0] = username, payload.json[1] = password.
+// Success: session is upgraded to ADMIN; responds with CMD_LOGIN_RESP + "OK".
+// Failure: responds with CMD_ERROR + reason.
 Response_t handle_login(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -86,7 +86,7 @@ Response_t handle_login(const ReqContext_t& ctx)
     return resp;
 }
 
-// 登出处理: 把 session 降级回 STUDENT 并清空用户名
+// Logout handler: downgrade session to STUDENT and clear username.
 Response_t handle_logout(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -98,8 +98,8 @@ Response_t handle_logout(const ReqContext_t& ctx)
     return resp;
 }
 
-// 按课程编码查询
-// 协议: payload.json[0] = course code
+// Query by course code.
+// Protocol: payload.json[0] = course code.
 Response_t handle_query_code(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -118,8 +118,8 @@ Response_t handle_query_code(const ReqContext_t& ctx)
     return resp;
 }
 
-// 按教师姓名查询
-// 协议: payload.json[0] = instructor name
+// Query by instructor name.
+// Protocol: payload.json[0] = instructor name.
 Response_t handle_query_instructor(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -139,9 +139,9 @@ Response_t handle_query_instructor(const ReqContext_t& ctx)
     return resp;
 }
 
-// 按学期查询
-// FIXME: 当前 Course schema 无 semester 字段, CourseRepository 无对应接口
-// 暂返回错误, 待数据库扩展后补齐
+// Query by semester.
+// FIXME: current Course schema lacks a semester field; CourseRepository has no matching API.
+// Returns an error for now; revisit once the schema is extended.
 Response_t handle_query_semester(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -188,8 +188,8 @@ Response_t handle_view_all_page(const ReqContext_t& ctx)
     return resp;
 }
 
-// 增加课程 (admin)
-// 协议: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom
+// Add course (admin).
+// Protocol: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom.
 Response_t handle_add(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -229,9 +229,9 @@ Response_t handle_add(const ReqContext_t& ctx)
     return resp;
 }
 
-// 更新课程 (admin)
-// 协议: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom
-// (code, section) 用于定位课程；(code,section,day,duration,semester) 用于定位排课
+// Update course (admin).
+// Protocol: payload.json[0..7] = code/title/section/instructor/day/duration/semester/classroom.
+// (code, section) locates the course; (code, section, day, duration, semester) locates the schedule row.
 Response_t handle_update(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -271,8 +271,8 @@ Response_t handle_update(const ReqContext_t& ctx)
     return resp;
 }
 
-// 删除课程 (admin)
-// 协议: payload.json[0] = code, payload.json[1] = section
+// Delete course (admin).
+// Protocol: payload.json[0] = code, payload.json[1] = section.
 Response_t handle_delete(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -308,8 +308,8 @@ Response_t handle_delete(const ReqContext_t& ctx)
     return resp;
 }
 
-// 列出全部管理员账号
-// 响应 payload: <count><RS><name1><RS><name2>...
+// List all administrator accounts.
+// Response payload: <count><RS><name1><RS><name2>...
 Response_t handle_admin_list(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -323,8 +323,8 @@ Response_t handle_admin_list(const ReqContext_t& ctx)
     return resp;
 }
 
-// 创建管理员
-// 协议: payload.json[0]=username, payload.json[1]=password
+// Create administrator.
+// Protocol: payload.json[0]=username., payload.json[1]=password
 Response_t handle_admin_create(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -362,9 +362,9 @@ Response_t handle_admin_create(const ReqContext_t& ctx)
     return resp;
 }
 
-// 修改管理员: 用户名/密码可任改其一或同改
-// 协议: payload.json[0]=old_username, payload.json[1]=new_username,
-//      payload.json[2]=new_password (空字符串表示不改密码)
+// Update administrator: username and/or password may be changed.
+// Protocol: payload.json[0]=old_username, payload.json[1]=new_username,
+//      payload.json[2]=new_password (empty string means keep the existing password).
 Response_t handle_admin_update(const ReqContext_t& ctx)
 {
     Response_t resp;
@@ -405,7 +405,7 @@ Response_t handle_admin_update(const ReqContext_t& ctx)
             return resp;
         }
     }
-    // 自身改名后同步 session.name, 避免后续 self-protection 误判
+    // After renaming self, update session.name so subsequent self-protection checks remain correct.
     if (ctx.session.name == old_name) ctx.session.name = new_name;
     print_log(info, "handle_admin_update: '%s' -> '%s' (pass_changed=%d) by '%s'",
               old_name.c_str(), new_name.c_str(),
@@ -415,8 +415,8 @@ Response_t handle_admin_update(const ReqContext_t& ctx)
     return resp;
 }
 
-// 删除管理员: 禁止删除自己
-// 协议: payload.json[0]=username
+// Delete administrator (cannot delete self).
+// Protocol: payload.json[0]=username.
 Response_t handle_admin_delete(const ReqContext_t& ctx)
 {
     Response_t resp;

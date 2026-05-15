@@ -24,13 +24,13 @@ Response_t Dispatcher::dispatch(const ReqContext_t& ctx)
     if (it == table_.end())
     {
         print_log(warn, "No handler found for cmd 0x%X", ctx.body.cmd_type());
-        // 这个函数无论如何都不能崩！！！！
+        // This function must never throw.
         resp.cmd_type = CMD_ERROR;
         resp.payload = "Unknown command";
         return resp;
     }
 
-    // 权限检查
+    // Authorization check
     const Entry_t& entr = it->second;
     if (ctx.session.role < entr.required)
     {
@@ -55,7 +55,7 @@ Response_t Dispatcher::dispatch(const ReqContext_t& ctx)
 Error::ErrorInfo Dispatcher::send_response_s(TcpSocket::SocketHandler& sh, const Response_t& resp)
 {
     Error::ErrorInfo err;
-    // 检查指令
+    // Validate command
     if (!is_s2c(resp.cmd_type))
     {
         err.e = Error::CMD_ERR;
@@ -89,7 +89,7 @@ Error::ErrorInfo Dispatcher::send_response_s(TcpSocket::SocketHandler& sh, const
 Error::ErrorInfo Dispatcher::send_response_c(TcpSocket::SocketHandler& sh, const Response_t& resp)
 {
     Error::ErrorInfo err;
-    // 检查指令
+    // Validate command
     if (!is_c2s(resp.cmd_type))
     {
         err.e = Error::CMD_ERR;

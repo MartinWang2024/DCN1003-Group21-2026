@@ -57,7 +57,7 @@ Error::ErrorInfo SocketHandler::socket_recv(void* recv_data, const size_t data_l
     Error::ErrorInfo err;
     char* data_ptr = static_cast<char*>(recv_data);
     size_t total_recv = 0;
-    // 确保按预期字节数量接收数据
+    // Loop until the requested number of bytes is received
     while (total_recv < data_len)
     {
         int recv_byte = recv(

@@ -14,8 +14,8 @@ Response_t handle_update(const ReqContext_t& ctx);
 Response_t handle_delete(const ReqContext_t& ctx);
 
 /**
- * 命令注册器
- * @param dispatcher 命令调度器实例
+ * Command registrar.
+ * @param dispatcher Dispatcher instance to register commands into.
  */
 void register_all_server(Dispatcher& dispatcher);
 

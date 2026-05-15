@@ -95,7 +95,7 @@ bool AdministratorRepository::insert_or_replace(const Administrator& admin) cons
 		return false;
 	}
 
-	// 写入前若是明文则统一转为 PBKDF2 编码; 已编码值原样写入(支持外部预哈希)
+	// Hash plaintext passwords on write; pre-encoded values are stored verbatim.
 	std::string stored = PasswordHash::is_encoded(admin.password)
 	                         ? admin.password
 	                         : PasswordHash::make(admin.password);
@@ -146,7 +146,7 @@ bool AdministratorRepository::verify_login(const std::string& username,
 		return PasswordHash::verify(password, stored);
 	}
 
-	// 兼容历史明文记录: 命中后立即原地升级为 PBKDF2 编码
+	// Legacy plaintext rows: upgrade in place to PBKDF2 on first successful match.
 	if (stored == password) {
 		std::string upgraded = PasswordHash::make(password);
 		if (!upgraded.empty()) {

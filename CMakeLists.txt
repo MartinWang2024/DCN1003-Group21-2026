@@ -18,28 +18,25 @@ add_subdirectory(programs/Server)
 
 add_subdirectory(Tests)
 
-# --- 服务端配置 ---
+# --- Server config ---
 set(APP_VERSION "000001")
 set(APP_TYPE "SERVER")
 configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Service/config.h")
 
-# --- 客户端配置 ---
+# --- Client config ---
 set(APP_VERSION "000001")
 set(APP_TYPE "programs/Client")
 configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Client/config.h")
 
-# --- 客户端配置 ---
+# --- Protocol config ---
 set(APP_VERSION "000001")
 set(APP_TYPE "PROTOCOL")
 configure_file(config.h.in "${CMAKE_CURRENT_BINARY_DIR}/Driver/include/config.h")
 
-# --- 定义目标并关联对应的头文件 ---
+# --- Targets and per-target include paths ---
 
-# 服务端目标
 target_include_directories(dcn_server PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Server")
 
-# 客户端目标
 target_include_directories(dcn_client PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Client")
 
-# 协议目标
 target_include_directories(dcn_driver PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Driver/include")

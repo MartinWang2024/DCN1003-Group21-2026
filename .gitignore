@@ -1,6 +1,6 @@
 .vscode/
 
-# 编译产物
+# Build artifacts
 build/
 cmake-build-debug/
 

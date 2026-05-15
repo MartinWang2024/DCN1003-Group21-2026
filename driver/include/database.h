@@ -8,116 +8,116 @@ struct sqlite3;
 namespace dcn_database {
 
 /**
- * @brief 课程实体
+ * @brief Course entity
  */
 struct Course {
 	/**
-	 * @brief 课程代码
+	 * @brief Course code
 	 */
 	std::string code;
 	/**
-	 * @brief 课程名称
+	 * @brief Course title
 	 */
 	std::string title;
 	/**
-	 * @brief 开课班级或分组
+	 * @brief Section or group
 	 */
 	std::string section;
 	/**
-	 * @brief 任课教师
+	 * @brief Instructor name
 	 */
 	std::string instructor;
 	/**
-	 * @brief 上课日期
+	 * @brief Class day
 	 */
 	std::string day;
 	/**
-	 * @brief 课程时长
+	 * @brief Duration (e.g. "90min")
 	 */
 	std::string duration;
 	/**
-	 * @brief 所属学期
+	 * @brief Semester identifier
 	 */
 	std::string semester;
 	/**
-	 * @brief 上课教室
+	 * @brief Classroom
 	 */
 	std::string classroom;
 };
 
 /**
- * @brief 管理员实体
+ * @brief Administrator entity
  */
 struct Administrator {
 	/**
-	 * @brief 管理员用户名
+	 * @brief Administrator username
 	 */
 	std::string username;
 	/**
-	 * @brief 管理员密码
+	 * @brief Administrator password (plaintext or PBKDF2-encoded)
 	 */
 	std::string password;
 };
 
 /**
- * @brief SQLite 数据库连接封装
- * @details 负责连接生命周期管理和最近一次错误信息存储
+ * @brief SQLite database connection wrapper
+ * @details Manages connection lifecycle and stores last error message.
  */
 class Database {
 public:
 	/**
-	 * @brief 默认构造函数
+	 * @brief Default constructor
 	 */
 	Database() = default;
 	/**
-	 * @brief 析构时自动关闭连接
+	 * @brief Automatically closes connection on destruction
 	 */
 	~Database();
 
 	/**
-	 * @brief 禁止拷贝构造，避免重复管理同一连接句柄
+	 * @brief Copy prohibited — avoids duplicate handle management
 	 */
 	Database(const Database&) = delete;
 	/**
-	 * @brief 禁止拷贝赋值，避免重复管理同一连接句柄
+	 * @brief Copy assignment prohibited
 	 */
 	Database& operator=(const Database&) = delete;
 
 	/**
-	 * @brief 移动构造，转移连接所有权
+	 * @brief Move constructor — transfers connection ownership
 	 */
 	Database(Database&& other) noexcept;
 	/**
-	 * @brief 移动赋值，转移连接所有权
+	 * @brief Move assignment — transfers connection ownership
 	 */
 	Database& operator=(Database&& other) noexcept;
 
 	/**
-	 * @brief 打开数据库连接
-	 * @param db_path 数据库文件路径
-	 * @return 打开成功返回 true，否则返回 false 并更新错误信息
+	 * @brief Open database connection
+	 * @param db_path Path to database file
+	 * @return true on success; false and sets error message on failure
 	 */
 	bool open(const std::string& db_path);
 	/**
-	 * @brief 关闭数据库连接
+	 * @brief Close database connection
 	 */
 	void close();
 
 	/**
-	 * @brief 获取最近一次错误信息
-	 * @return 最近一次错误信息字符串引用
+	 * @brief Get last error message
+	 * @return Reference to last error string
 	 */
 	const std::string& last_error() const;
 
 	/**
-	 * @brief 获取底层 SQLite 连接句柄
-	 * @return sqlite3 原始句柄，未打开时可能为 nullptr
+	 * @brief Get raw SQLite connection handle
+	 * @return sqlite3* handle; nullptr if not open
 	 */
 	sqlite3* raw_handle() const;
 
 	/**
-	 * @brief 设置最近一次错误信息
-	 * @param message 错误文本
+	 * @brief Set last error message
+	 * @param message Error text
 	 */
 	void set_error(const std::string& message) const;
 
@@ -127,134 +127,134 @@ private:
 };
 
 /**
- * @brief 课程数据访问仓储
- * @details 提供课程表结构初始化、写入与查询接口
+ * @brief Course data repository
+ * @details Schema initialization, insert/update, and queries via JOIN.
  */
 class CourseRepository {
 public:
 	/**
-	 * @brief 默认构造函数
+	 * @brief Default constructor
 	 */
 	CourseRepository();
 	/**
-	 * @brief 构造并尝试打开指定数据库
-	 * @param db_path 数据库文件路径
+	 * @brief Construct and open a specific database
+	 * @param db_path Database file path
 	 */
 	explicit CourseRepository(const std::string& db_path);
 
 	/**
-	 * @brief 打开数据库连接
-	 * @param db_path 数据库文件路径
-	 * @return 打开成功返回 true，否则返回 false
+	 * @brief Open database connection
+	 * @param db_path Database file path
+	 * @return true on success
 	 */
 	bool open(const std::string& db_path);
 	/**
-	 * @brief 关闭数据库连接
+	 * @brief Close database connection
 	 */
 	void close();
 	/**
-	 * @brief 初始化课程相关数据表
-	 * @return 初始化成功返回 true，否则返回 false
+	 * @brief Initialize course-related tables
+	 * @return true on success
 	 */
 	bool initialize_schema() const;
 
 	/**
-	 * @brief 插入课程记录，若主键或唯一键冲突则覆盖
-	 * @param course 待写入课程对象
-	 * @return 写入成功返回 true，否则返回 false
+	 * @brief Insert or replace (UPSERT) a course record
+	 * @param course Course to write
+	 * @return true on success
 	 */
 	bool insert_or_replace(const Course& course) const;
 	/**
-	 * @brief 按课程代码查询课程
-	 * @param code 课程代码
-	 * @return 匹配课程列表，失败或无结果时可能为空
+	 * @brief Search by course code (exact match)
+	 * @param code Course code
+	 * @return Matching courses; empty on failure/no results
 	 */
 	std::vector<Course> search_by_course_code(const std::string& code) const;
 	/**
-	 * @brief 按教师姓名查询课程
-	 * @param instructor 教师姓名
-	 * @return 匹配课程列表，失败或无结果时可能为空
+	 * @brief Search by instructor name (LIKE match)
+	 * @param instructor Instructor name
+	 * @return Matching courses; empty on failure/no results
 	 */
 	std::vector<Course> search_by_instructor(const std::string& instructor) const;
 	/**
-	 * @brief 按教室查询课程
-	 * @param classroom 教室名称（支持模糊匹配）
-	 * @return 匹配课程列表，失败或无结果时可能为空
+	 * @brief Search by classroom (LIKE match)
+	 * @param classroom Classroom name
+	 * @return Matching courses; empty on failure/no results
 	 */
 	std::vector<Course> search_by_classroom(const std::string& classroom) const;
 	/**
-	 * @brief 按上课日期查询课程
-	 * @param day 上课日期（精确匹配）
-	 * @return 匹配课程列表，失败或无结果时可能为空
+	 * @brief Search by day (exact match)
+	 * @param day Class day
+	 * @return Matching courses; empty on failure/no results
 	 */
 	std::vector<Course> search_by_day(const std::string& day) const;
 	/**
-	 * @brief 查询指定学期的全部课程
-	 * @param semester 学期标识
-	 * @return 匹配课程列表，失败或无结果时可能为空
+	 * @brief View all courses in a given semester
+	 * @param semester Semester identifier
+	 * @return Matching courses; empty on failure/no results
 	 */
 	std::vector<Course> view_courses_by_semester(const std::string& semester) const;
 	/**
-	 * @brief 查询全部课程（含排课信息）
-	 * @return 全部课程列表，失败时可能为空
+	 * @brief View all courses (with schedule info)
+	 * @return All courses; empty on failure
 	 */
 	std::vector<Course> view_all_courses() const;
 
 	/**
-	 * @brief 分页查询全部课程
-	 * @param offset 起始偏移（0 起算）
-	 * @param limit  最大返回行数
-	 * @return 当前页课程列表，失败时可能为空
+	 * @brief Paginated view of all courses
+	 * @param offset Starting offset (0-based)
+	 * @param limit  Max rows to return
+	 * @return Page of courses; empty on failure
 	 */
 	std::vector<Course> view_all_courses_paged(int offset, int limit) const;
 
 	/**
-	 * @brief 统计课程总数
-	 * @return 课程总数；失败时返回 -1
+	 * @brief Count total courses
+	 * @return Course count; -1 on failure
 	 */
 	int count_courses() const;
 
 	/**
-	 * @brief 按课程代码和班级删除课程记录
-	 * @param code 课程代码
-	 * @param section 班级
-	 * @return 删除成功返回 true，否则返回 false
+	 * @brief Delete a course by code and section (CASCADE deletes schedules)
+	 * @param code    Course code
+	 * @param section Section
+	 * @return true on success
 	 */
 	bool delete_course(const std::string& code, const std::string& section) const;
 
 	/**
-	 * @brief 按 (code, section) 更新课程的 title/instructor；
-	 *        按 (code, section, day, duration, semester) 更新排课的 classroom
-	 * @param course 包含新字段值的课程对象，key 字段用于定位记录
-	 * @return 更新成功返回 true，否则返回 false
+	 * @brief Update course title/instructor by (code, section);
+	 *        update schedule classroom by (code, section, day, duration, semester)
+	 * @param course Course with new field values; key fields identify records
+	 * @return true on success
 	 */
 	bool update(const Course& course) const;
 	/**
-	 * @brief 删除指定排课记录（不影响课程主表）
-	 * @param code     课程代码
-	 * @param section  班级
-	 * @param day      上课日期
-	 * @param duration 课程时长
-	 * @param semester 学期
-	 * @return 删除成功返回 true，否则返回 false
+	 * @brief Delete a specific schedule record (does not affect courses table)
+	 * @param code     Course code
+	 * @param section  Section
+	 * @param day      Class day
+	 * @param duration Duration
+	 * @param semester Semester
+	 * @return true on success
 	 */
 	bool delete_schedule(const std::string& code, const std::string& section,
 						 const std::string& day, const std::string& duration,
 						 const std::string& semester) const;
 
 	/**
-	 * @brief 获取最近一次错误信息
-	 * @return 最近一次错误信息字符串引用
+	 * @brief Get last error message
+	 * @return Reference to last error string
 	 */
 	const std::string& last_error() const;
 
 private:
 	/**
-	 * @brief 执行查询并将结果集转换为课程对象列表
-	 * @param sql SQL 查询语句
-	 * @param bindings 预编译参数绑定值列表
-	 * @param out_courses 查询结果输出容器
-	 * @return 查询并转换成功返回 true，否则返回 false
+	 * @brief Execute query and map result rows to Course objects
+	 * @param sql       SQL query
+	 * @param bindings  Parameter bindings for prepared statement
+	 * @param out_courses Output container
+	 * @return true on success
 	 */
 	bool prepare_and_collect(const std::string& sql,
 							 const std::vector<std::string>& bindings,
@@ -265,73 +265,73 @@ private:
 };
 
 /**
- * @brief 管理员数据访问仓储
- * @details 提供管理员表初始化、写入与登录验证接口
+ * @brief Administrator data repository
+ * @details Schema init, insert/upsert, and login verification.
  */
 class AdministratorRepository {
 public:
 	/**
-	 * @brief 默认构造函数
+	 * @brief Default constructor
 	 */
 	AdministratorRepository();
 	/**
-	 * @brief 构造并尝试打开指定数据库
-	 * @param db_path 数据库文件路径
+	 * @brief Construct and open a specific database
+	 * @param db_path Database file path
 	 */
 	explicit AdministratorRepository(const std::string& db_path);
 
 	/**
-	 * @brief 打开数据库连接
-	 * @param db_path 数据库文件路径
-	 * @return 打开成功返回 true，否则返回 false
+	 * @brief Open database connection
+	 * @param db_path Database file path
+	 * @return true on success
 	 */
 	bool open(const std::string& db_path);
 	/**
-	 * @brief 关闭数据库连接
+	 * @brief Close database connection
 	 */
 	void close();
 	/**
-	 * @brief 初始化管理员相关数据表
-	 * @return 初始化成功返回 true，否则返回 false
+	 * @brief Initialize administrator-related tables
+	 * @return true on success
 	 */
 	bool initialize_schema() const;
 
 	/**
-	 * @brief 插入管理员记录，若冲突则覆盖
-	 * @param admin 待写入管理员对象
-	 * @return 写入成功返回 true，否则返回 false
+	 * @brief Insert or replace (UPSERT) an admin record; auto-hashes plaintext passwords
+	 * @param admin Admin to write
+	 * @return true on success
 	 */
 	bool insert_or_replace(const Administrator& admin) const;
 	/**
-	 * @brief 校验管理员登录凭据
-	 * @param username 用户名
-	 * @param password 密码
-	 * @return 凭据匹配返回 true，否则返回 false
+	 * @brief Verify admin login credentials (PBKDF2 or legacy plaintext)
+	 * @param username Username
+	 * @param password Password
+	 * @return true if credentials match
 	 */
 	bool verify_login(const std::string& username, const std::string& password) const;
 
 	/**
-	 * @brief 列出全部管理员用户名 (不返回密码)
+	 * @brief List all admin usernames (passwords excluded)
 	 */
 	std::vector<std::string> list_usernames() const;
 	/**
-	 * @brief 修改管理员用户名 (旧 -> 新)
-	 * @return 成功 true; 旧账号不存在 / 新账号已占用 / 数据库错误 返回 false
+	 * @brief Rename administrator (old -> new)
+	 * @return true on success; false if old not found, new taken, or DB error
 	 */
 	bool rename(const std::string& old_username, const std::string& new_username) const;
 	/**
-	 * @brief 删除管理员账号
-	 * @return 成功 true; 不存在或数据库错误返回 false
+	 * @brief Delete administrator account
+	 * @return true on success; false if not found or DB error
 	 */
 	bool remove(const std::string& username) const;
 	/**
-	 * @brief 是否存在该用户名
+	 * @brief Check if username exists
 	 */
 	bool exists(const std::string& username) const;
 
 	/**
-	 * @brief 获取最近一次错误信息
-	 * @return 最近一次错误信息字符串引用
+	 * @brief Get last error message
+	 * @return Reference to last error string
 	 */
 	const std::string& last_error() const;
 
