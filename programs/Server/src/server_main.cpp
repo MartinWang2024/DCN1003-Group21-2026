@@ -8,9 +8,12 @@
 
 #include <ws2tcpip.h>
 #include <atomic>
+#include <chrono>
 #include <csignal>
 #include <iostream>
+#include <mutex>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 
 using namespace Protocal::Dispatch;
@@ -19,13 +22,36 @@ namespace {
 std::atomic<SOCKET> g_listen_sock{INVALID_SOCKET};
 std::atomic<bool>   g_running{true};
 
+std::mutex                g_clients_mu;
+std::unordered_set<SOCKET> g_client_socks;
+std::atomic<int>          g_active_workers{0};
+
+void track_client(SOCKET s) {
+    std::lock_guard<std::mutex> lk(g_clients_mu);
+    g_client_socks.insert(s);
+}
+
+void untrack_client(SOCKET s) {
+    std::lock_guard<std::mutex> lk(g_clients_mu);
+    g_client_socks.erase(s);
+}
+
+void shutdown_all_clients() {
+    std::lock_guard<std::mutex> lk(g_clients_mu);
+    for (SOCKET s : g_client_socks) {
+        // SD_BOTH unblocks any pending recv on the worker thread without
+        // closing the handle; the worker's RAII SocketHandler still owns it.
+        shutdown(s, SD_BOTH);
+    }
+}
+
 void request_shutdown() {
     g_running = false;
     SOCKET s = g_listen_sock.exchange(INVALID_SOCKET);
     if (s != INVALID_SOCKET) {
-        // Close the listening socket so a blocked accept() returns immediately and the main loop exits.
         closesocket(s);
     }
+    shutdown_all_clients();
 }
 
 BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
@@ -47,10 +73,12 @@ void signal_handler(int) { request_shutdown(); }
 }
 
 void handle_client(TcpSocket::SocketHandler sh,
+                   SOCKET raw_sock,
                    dcn_database::CourseRepository& courses,
                    dcn_database::AdministratorRepository& admins,
                    Dispatcher& dispatcher)
 {
+    g_active_workers.fetch_add(1);
     Session_t session;
 
     while (true)
@@ -76,6 +104,8 @@ void handle_client(TcpSocket::SocketHandler sh,
 
     print_log(info, "handle_client: session for '%s' closed",
               session.name.empty() ? "<anon>" : session.name.c_str());
+    untrack_client(raw_sock);
+    g_active_workers.fetch_sub(1);
 }
 
 
@@ -106,7 +136,6 @@ int main()
         std::cerr << "Failed to open/init admins DB: " << admins.last_error() << std::endl;
         return 1;
     }
-    // Seed a default administrator on first launch; otherwise no client could ever log in.
     if (!admins.verify_login("admin", "admin123"))
     {
         admins.insert_or_replace({"admin", "admin123"});
@@ -142,16 +171,31 @@ int main()
         inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
         print_log(info, "[+] Client connected: %s:%d", ip, ntohs(client_addr.sin_port));
 
+        track_client(client_sock);
         TcpSocket::SocketHandler sh(client_sock, client_addr);
         std::thread(handle_client,
                     std::move(sh),
+                    client_sock,
                     std::ref(courses), std::ref(admins),
                     std::ref(dispatcher)).detach();
     }
 
-    print_log(info, "[*] server shutting down, flushing DB...");
-    SOCKET s = g_listen_sock.exchange(INVALID_SOCKET);
-    if (s != INVALID_SOCKET) closesocket(s);
+    print_log(info, "[*] server shutting down, draining workers...");
+    shutdown_all_clients();
+
+    // Wait for detached workers to release sqlite handles before close().
+    // 5s ceiling: workers should exit immediately after shutdown() unblocks recv.
+    using namespace std::chrono;
+    const auto deadline = steady_clock::now() + seconds(5);
+    while (g_active_workers.load() > 0 && steady_clock::now() < deadline) {
+        std::this_thread::sleep_for(milliseconds(20));
+    }
+    if (g_active_workers.load() > 0) {
+        print_log(warn, "[!] %d worker(s) did not exit in time; closing DB anyway",
+                  g_active_workers.load());
+    }
+
+    print_log(info, "[*] flushing DB...");
     courses.close();
     admins.close();
     print_log(info, "[*] server stopped cleanly");

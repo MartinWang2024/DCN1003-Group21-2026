@@ -14,8 +14,11 @@ constexpr const char* DB_COURSES_PATH = "data/DCN.db";
 constexpr const char* DB_ADMINS_PATH  = "data/DCN.db";
 
 // Per-connection worker thread.
-// sh takes ownership of the socket via move; courses/admins/dispatcher are references to the main instances.
+// sh takes ownership of the socket via move; raw_sock is the underlying
+// SOCKET copied for shutdown tracking (the worker does not close it).
+// courses/admins/dispatcher are references to the main instances.
 void handle_client(TcpSocket::SocketHandler sh,
+                   SOCKET raw_sock,
                    dcn_database::CourseRepository& courses,
                    dcn_database::AdministratorRepository& admins,
                    Protocal::Dispatch::Dispatcher& dispatcher);
