@@ -109,8 +109,21 @@ void handle_client(TcpSocket::SocketHandler sh,
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
+    int port = PORT;
+    if (argc >= 2)
+    {
+        try {
+            const long p = std::stol(argv[1]);
+            if (p < 1 || p > 65535) throw std::out_of_range("port");
+            port = static_cast<int>(p);
+        } catch (const std::exception&) {
+            std::cerr << "Usage: " << argv[0] << " [port]   (port must be 1-65535)" << std::endl;
+            return 1;
+        }
+    }
+
     TcpSocket::WinsockGuard winsock;
     if (!winsock.ok())
     {
@@ -145,9 +158,11 @@ int main()
     Dispatcher dispatcher;
     register_all_server(dispatcher);
 
-    SOCKET listen_sock = create_listener(PORT, BACKLOG);
+    SOCKET listen_sock = create_listener(port, BACKLOG);
     if (listen_sock == INVALID_SOCKET) return 1;
     g_listen_sock = listen_sock;
+
+    print_log(info, "[*] server listening on port %d", port);
 
     SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
     std::signal(SIGINT,  signal_handler);
