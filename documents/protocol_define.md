@@ -1,12 +1,8 @@
-# DCN1003 Application Protocol Specification
+# Application Protocol
 
-> Command/response protocol for the course schedule system. Reliable transport on top of protobuf + AES + HMAC.
+Command/response protocol over protobuf + AES-256-CBC + HMAC-SHA256.
 
----
-
-## Frame structure
-
-### Frame layout (wire byte order)
+## Frame layout
 
 ```
 +---------------------------+  <- MsgHeader_t (fixed 56 bytes)
@@ -28,7 +24,7 @@
 - **mac**: HMAC-SHA256 over the plaintext serialized MsgBody.
 - **MsgBody**: protobuf-serialized, then AES-encrypted.
 
-### protobuf definition (`message.proto`)
+Protobuf body (`message.proto`):
 
 ```proto
 message Payload {
@@ -43,7 +39,7 @@ message MsgBody {
 }
 ```
 
-### Send / receive pipeline
+## Pipeline
 
 | Step | Sender                                              | Receiver                                          |
 |------|-----------------------------------------------------|---------------------------------------------------|
@@ -56,9 +52,7 @@ message MsgBody {
 
 ---
 
-## Command codes (cmd_type)
-
-### Encoding scheme
+## cmd_type encoding
 
 ```c++
 constexpr uint32_t C2S = 0x00000000;  // Client -> Server
@@ -71,7 +65,7 @@ constexpr bool is_c2s(uint32_t c) { return (c & 0x80000000) == 0; }
 constexpr bool is_s2c(uint32_t c) { return (c & 0x80000000) != 0; }
 ```
 
-### Full command table
+## Command table
 
 | Mnemonic                      | Value        | Direction | Role    | Description                                  |
 |-------------------------------|--------------|-----------|---------|----------------------------------------------|
@@ -99,15 +93,10 @@ constexpr bool is_s2c(uint32_t c) { return (c & 0x80000000) != 0; }
 
 ## Payload encoding
 
-### Common rules
+`Payload.json` is `repeated bytes` used as a positional argument array (not JSON text).
+Fields are zero-indexed; missing trailing fields are empty strings. Binary-safe.
 
-- `Payload.json` is `repeated bytes`; fields are passed positionally (this is a positional argument array, not JSON text).
-- Fields are zero-indexed; missing trailing fields are treated as empty strings.
-- Binary-safe: no UTF-8 validation, can carry arbitrary bytes.
-
-### Response serialization (used by query commands)
-
-Query responses serialize the course list using ASCII control characters:
+Query responses serialize the course list with ASCII control characters:
 
 ```
 <count><RS><course1><RS><course2>...
@@ -118,10 +107,7 @@ Each record:
 <code><US><title><US><section><US><instructor><US><day><US><duration><US><classroom>
 ```
 
-- `RS = 0x1E` (Record Separator)
-- `US = 0x1F` (Unit Separator)
-
-Control characters are chosen so they do not collide with course field contents.
+`RS = 0x1E`, `US = 0x1F`. These bytes do not appear in course fields.
 
 ---
 
@@ -207,7 +193,7 @@ Control characters are chosen so they do not collide with course field contents.
 |-----------|-------------|----------------------------------------------------------------|
 | Any input | `CMD_ERROR` | `"Query by semester not supported in current schema"`          |
 
-> **Why unimplemented**: the current `Course` schema lacks a `semester` field and `CourseRepository` has no matching API. Revisit once the schema is extended.
+The current `Course` schema lacks a `semester` field; revisit when the schema is extended.
 
 ---
 
@@ -225,7 +211,7 @@ Control characters are chosen so they do not collide with course field contents.
 | `json[5]` | duration   | bytes | Y        |
 | `json[6]` | classroom  | bytes | Y        |
 
-> Primary key is the composite `(code, section)`. Re-inserts overwrite the existing row.
+Primary key is the composite `(code, section)`. Re-inserts overwrite.
 
 **Response**
 
@@ -255,7 +241,8 @@ Same fields as ADD. `(code, section)` locates the row; the remaining five fields
 | DB update failure           | `CMD_SERVER_ERROR`   | `"Failed to update course: <details>"`        |
 | Insufficient permissions    | `CMD_PERMISSION_ERR` | (dispatcher)                                  |
 
-> Note: under the current schema, the "row not found" case is not surfaced explicitly (it depends on whether `CourseRepository::update` checks affected rows).
+Under the current schema the "row not found" case is not surfaced explicitly; it depends on
+whether `CourseRepository::update` checks affected rows.
 
 ---
 
@@ -280,14 +267,14 @@ Same fields as ADD. `(code, section)` locates the row; the remaining five fields
 
 ---
 
-## Protocol invariants
+## Invariants
 
-1. Direction-exclusive: C2S commands are never emitted by the server, and vice versa. Use `is_c2s` / `is_s2c` to validate.
-2. Every response has a `cmd_type`: handlers never return an uninitialized `Response_t`.
-3. The dispatcher never throws: any unknown exception is caught and converted to `CMD_SERVER_ERROR`.
-4. Centralized authorization: permission checks happen only in `Dispatcher::dispatch`; handlers assume they passed.
-5. Unique `req_id`: incremented per frame via an atomic counter so the client can correlate request/response.
-6. Any receive failure tears down the connection: network errors and protocol errors are not differentiated, reducing attack surface.
+1. Direction-exclusive: C2S never originates from the server, S2C never from the client. Validate with `is_c2s` / `is_s2c`.
+2. Every response carries a `cmd_type`.
+3. The dispatcher never throws; unknown exceptions become `CMD_SERVER_ERROR`.
+4. Authorization lives only in `Dispatcher::dispatch`; handlers assume the check passed.
+5. `req_id` is unique per frame (atomic counter) for request/response correlation.
+6. Any receive failure tears down the connection; network and protocol errors are not distinguished.
 
 ---
 

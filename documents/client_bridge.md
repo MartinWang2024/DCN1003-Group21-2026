@@ -1,41 +1,34 @@
-# Client Bridge Protocol (stdio TSV)
+# Client Bridge (stdio TSV)
 
-The DCN1003 course schedule client uses a **two-layer architecture**:
+Two-layer client:
 
 ```
-┌─────────────────┐  stdio TSV  ┌──────────────────────┐  TCP+AES+HMAC  ┌────────────┐
-│ Flutter UI      │ ──────────► │ dcn_client.exe       │ ─────────────► │ dcn_server │
-│ (Dart, Win exe) │ ◄────────── │ (Winsock + protocol) │ ◄───────────── │  (.exe)    │
-└─────────────────┘             └──────────────────────┘                 └────────────┘
++-----------------+  stdio TSV  +----------------------+  TCP+AES+HMAC  +------------+
+| Flutter UI      | ----------> | dcn_client.exe       | -------------> | dcn_server |
+| (Dart, Win exe) | <---------- | (Winsock + protocol) | <------------- |  (.exe)    |
++-----------------+             +----------------------+                +------------+
 ```
 
-`dcn_client.exe` is a complete C++ Winsock client (the assignment deliverable). It can run
-standalone as a command-line REPL, or it can act as a Flutter subprocess and expose a
-bridge over a stdin/stdout TSV line protocol.
+`dcn_client.exe` is a complete C++ Winsock client. It runs standalone as a REPL, or as a
+Flutter subprocess exposing a stdin/stdout TSV bridge.
 
----
-
-## 1. Launch modes
+## Launch modes
 
 | Mode   | Command line                | Behavior                                                |
 |--------|-----------------------------|---------------------------------------------------------|
 | REPL   | `dcn_client.exe`            | Interactive terminal with `> ` prompt, for manual demo. |
 | Bridge | `dcn_client.exe --bridge`   | Silent stdio mode used as a Flutter subprocess.         |
 
-Both modes share the same verb set and field order; only the prompt/echo behavior differs.
+Both modes share the verb set and field order; only prompt/echo differs.
 
----
+## Frame format
 
-## 2. Frame format
-
-- **One message per line**, terminated by `\n` (`\r\n` is also accepted on Windows; the parser trims `\r`).
-- **Fields are separated by `\t` (0x09)**.
-- **Fields must not contain `\t` or `\n`** (course fields are plain text and stay within the assignment scope).
+- One message per line, terminated by `\n` (parser also trims `\r`).
+- Fields separated by `\t` (0x09).
+- Fields must not contain `\t` or `\n`.
 - Encoding: UTF-8.
 
----
-
-## 3. Request verbs (Flutter -> C++)
+## Requests (Flutter -> C++)
 
 | Verb               | Fields                                                                          | cmd_type                     |
 |--------------------|---------------------------------------------------------------------------------|------------------------------|
@@ -51,13 +44,10 @@ Both modes share the same verb set and field order; only the prompt/echo behavio
 | `DISCONNECT`       | -                                                                               | -                            |
 | `QUIT`             | -                                                                               | -                            |
 
-`CONNECT` must be issued before any server-bound verb.
-`DISCONNECT` closes the socket but keeps the bridge process alive so a new `CONNECT` can follow.
-`QUIT` terminates the bridge process.
+`CONNECT` precedes any server-bound verb. `DISCONNECT` closes the socket but keeps the
+bridge alive for a new `CONNECT`. `QUIT` exits the bridge process.
 
----
-
-## 4. Response status lines (C++ -> Flutter)
+## Responses (C++ -> Flutter)
 
 | Status  | Fields                                                                                                                | Meaning                                          |
 |---------|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|
@@ -66,13 +56,11 @@ Both modes share the same verb set and field order; only the prompt/echo behavio
 | `DATA`  | `<count>\t<c1.code>\t<c1.title>\t<c1.section>\t<c1.instructor>\t<c1.day>\t<c1.duration>\t<c1.classroom>\t<c2.code>...` | Query result.                                    |
 | `READY` | -                                                                                                                     | Bridge startup handshake, emitted once at boot.  |
 
-**Total DATA fields** = `1 + 7 * count`. When `count = 0` only the single field `DATA\t0\n` is emitted.
+Total DATA fields = `1 + 7 * count`. When `count = 0`, the frame is `DATA\t0\n`.
 
----
+## Samples
 
-## 5. Sample sequences
-
-### Successful login + query
+Login + query:
 ```
 < READY
 > CONNECT	127.0.0.1	9001
@@ -85,7 +73,7 @@ Both modes share the same verb set and field order; only the prompt/echo behavio
 (bridge process exits)
 ```
 
-### Error / reconnect
+Error and reconnect:
 ```
 > CONNECT	127.0.0.1	9001
 < OK	connected
@@ -97,9 +85,7 @@ Both modes share the same verb set and field order; only the prompt/echo behavio
 < OK	connected
 ```
 
----
-
-## 6. Implementation index
+## Implementation index
 
 | File                                          | Responsibility                                       |
 |-----------------------------------------------|------------------------------------------------------|
